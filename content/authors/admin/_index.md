@@ -1,169 +1,114 @@
 ---
-# Display name
+---
 title: Yuganshu Jain
-
-# Name pronunciation (optional)
 name_pronunciation: ''
-
-# Full name (for SEO)
-first_name: Yuganshu    
+first_name: Yuganshu
 last_name: Jain
-
-# Pronouns (optional)
 pronouns: he/him
-
-# Status emoji
 status:
   icon: 🚀
-
-# Is this the primary user of the site?
 superuser: true
-
-# Highlight the author in author lists? (true/false)
 highlight_name: true
+role: MS Computer Science (2024–2026) · Software Development Engineer
 
-# Role/position/tagline
-role: Software Development Engineer
-
-# Organizations/Affiliations to display in Biography blox
 organizations:
   - name: Ex Amazon SDE Intern
-    url: https://Amazon.com/
+    url: https://amazon.com/
 
-# Social network links
-# Need to use another icon? Simply download the SVG icon to your `assets/media/icons/` folder.
 profiles:
+  - icon: phone
+    url: 'tel:+19342559075'
+    label: Phone
   - icon: at-symbol
     url: 'mailto:yuganshu.jain@stonybrook.edu'
     label: E-mail Me
-  - icon: brands/x
-    url: https://twitter.com/Yuganshu
   - icon: brands/github
-    url: https://github.com/yuganshu007
+    url: 'https://github.com/yuganshu007'
   - icon: brands/linkedin
-    url: https://www.linkedin.com/in/alexjohnsonai/
-  - icon: academicons/google-scholar
-    url: https://scholar.google.com/citations?user=alexjohnson
-  - icon: academicons/orcid
-    url: https://orcid.org/0000-0002-1825-0097
+    url: 'https://www.linkedin.com/in/yuganshu-jain-6047b6165/'
 
 interests:
-  - Large Language Models
-  - Computer Vision
-  - Reinforcement Learning
-  - AI Ethics
+  - Distributed Systems
+  - Systems Security
+  - Data Science
+  - Data Visualization
 
 education:
-  - area: PhD Computer Science (AI Focus)
-    institution: Stanford University
-    date_start: 2015-09-01
-    date_end: 2019-06-30
+  - area: M.S. Computer Science
+    institution: Stony Brook University
+    date_start: 2024-08-01
+    date_end: 2026-05-31
     summary: |
-      Thesis on _Scaling Laws for Neural Language Models_. Supervised by Prof. Andrew Ng. Published 5 papers in NeurIPS and ICML, with 2 best paper awards.
-    button:
-      text: 'Read Thesis'
-      url: 'https://example.com/thesis.pdf'
-  - area: MS Computer Science
-    institution: Carnegie Mellon University
-    date_start: 2013-09-01
-    date_end: 2015-05-31
+      Head of Graduate Teaching Assistants for Logic in CS. Relevant coursework: Distributed Systems, Systems Security, Data Science, Data Visualization, HCI.
+  - area: B.Tech. Computer Science & Engineering
+    institution: Jamia Hamdard, South Delhi, India
+    date_start: 2017-07-01
+    date_end: 2021-08-01
     summary: |
-      GPA: 4.0/4.0
-
-      Specialized in machine learning and robotics.
-  - area: BS Computer Science
-    institution: MIT
-    date_start: 2009-09-01
-    date_end: 2013-05-31
-    summary: |
-      GPA: 3.9/4.0
-
-      Minored in Mathematics. President of AI Club.
+      Final Year CGPA: 9.6/10.0. Coursework: Distributed Systems, Advanced Computer Architecture, Advanced DBMS, Operating Systems Lab, Compiler Design Lab, Advanced Java, Web Technology, Big Data.
 
 work:
-  - position: Senior AI Research Scientist
-    company_name: Meta AI
-    company_url: 'https://ai.meta.com/'
-    company_logo: ''
-    date_start: 2020-01-01
-    date_end: ''
-    summary: |2-
-      Leading research on multimodal AI systems. Contributed to Llama 2 and other open-source models. 50+ citations in 3 years.
-  - position: AI Research Intern
-    company_name: OpenAI
-    company_url: 'https://openai.com/'
-    company_logo: ''
-    date_start: 2019-06-01
-    date_end: 2019-12-31
+  - position: Software Development Engineer Intern
+    company_name: Amazon
+    company_url: 'https://www.amazon.jobs/'
+    date_start: 2025-05-01
+    date_end: 2025-08-31
     summary: |
-      Worked on GPT-3 scaling. Co-authored paper on prompt engineering.
+      • Deployed a scalable end-to-end ETL pipeline with a Java orchestrator on EMR/Spark to process 1,000+ hours/day of call transcripts with retry logic, improving throughput and reliability.
+      • Designed a Voice of Advertiser AI chatbot using Bedrock, reducing stakeholder review time from ~45 minutes to ~2 minutes by enabling fast distributed joins and curated datasets (P95 query latency < 2s).
+      • Built an AI-powered Streamlit dashboard (Python/Plotly) surfaced to 500+ Ads stakeholders enabling 10x faster decisions and early budgeting degradation alerts; recognized by Ads leadership.
+  - position: Software Engineer
+    company_name: RSTech Softwares
+    company_url: ''
+    date_start: 2021-11-01
+    date_end: 2024-08-31
+    summary: |
+      • Optimized full-stack architecture using React, TypeScript, PostgreSQL and Next.js, cutting page load times by 52% via caching and code-splitting.
+      • Architected distributed microservices (REST + Cassandra) to support 2,500+ concurrent users and improved DB response times by 40%.
+      • Built an SES email-reporting pipeline with retries that resolved 344 customer issues and improved SLA adherence.
+      • Led a team of 5 developers, introduced advanced data security practices and mentoring to improve system reliability by ~25%.
+  - position: Software Development Engineer
+    company_name: Infinity Haul
+    company_url: ''
+    date_start: 2021-04-01
+    date_end: 2021-11-01
+    summary: |
+      • Refactored Android modules in Java/Kotlin to reduce UI stalls and CPU usage, improving responsiveness by ~40%.
+      • Integrated Google Maps SDK with Firebase for real-time tracking, lowering delivery times by ~20%.
 
-# Skills
-# Add your own SVG icons to `assets/media/icons/`
 skills:
   - name: Technical Skills
     items:
-      - name: Python & PyTorch
-        description: ''
+      - name: Languages
+        description: Java, Python, Kotlin, C++, C, JavaScript, TypeScript, SQL, PL/SQL
         percent: 95
         icon: code-bracket
-      - name: Machine Learning
-        description: ''
-        percent: 100
-        icon: chart-bar
-      - name: Cloud Computing (AWS/GCP)
-        description: ''
-        percent: 85
-        icon: cloud
-  - name: Hobbies
-    color: '#eeac02'
-    color_border: '#f0bf23'
-    items:
-      - name: Hiking in the Rockies
-        description: ''
-        percent: 80
-        icon: person-simple-walk
-      - name: Building Custom PCs
-        description: ''
+      - name: Cloud & Big Data
+        description: AWS (S3, EMR, Glue, Athena, Lambda), Spark, Hadoop
         percent: 90
-        icon: cpu-chip
-      - name: Sci-Fi Reading
-        description: ''
-        percent: 70
-        icon: book-open
+        icon: cloud
+      - name: Web & Backend
+        description: Spring Boot, Flask, FastAPI, React, Next.js, REST, GraphQL, Docker, Kubernetes
+        percent: 90
+        icon: server
 
 languages:
   - name: English
     percent: 100
-  - name: Spanish
-    percent: 50
+  - name: Hindi
+    percent: 100
 
-# Awards.
-#   Add/remove as many awards below as you like.
-#   Only `title`, `awarder`, and `date` are required.
-#   Begin multi-line `summary` with YAML's `|` or `|2-` multi-line prefix and indent 2 spaces below.
-awards:
-  - title: Best Paper Award
-    url: https://neurips.cc/
-    date: '2022-12-01'
-    awarder: NeurIPS
-    icon: hero/trophy
+projects:
+  - title: Reddit Humor Detection & Funniness Prediction
+    date: 2025
+    tech: Python, NLP, TensorFlow, HuggingFace, scikit-learn
     summary: |
-      Awarded for groundbreaking work on efficient training of large models.
-  - title: AI Innovation Grant
-    url: https://www.nsf.gov/
-    date: '2021-06-15'
-    awarder: National Science Foundation
-    icon: hero/currency-dollar
+      Built an end-to-end humor detection system on 1M+ Reddit jokes using TF-IDF, BERT embeddings and Random Forests achieving ~86% accuracy. Implemented LDA topic modeling and regression pipelines to predict funniness scores (R² ≈ 0.87).
+  - title: Phishing Detection System
+    date: 2024
+    tech: Python, scikit-learn, XGBoost, FastAPI, Kubernetes
     summary: |
-      $500,000 grant for research in ethical AI development.
-  - title: Outstanding PhD Thesis
-    url: https://www.stanford.edu/
-    date: '2019-06-30'
-    awarder: Stanford University
-    icon: hero/academic-cap
-    summary: |
-      Recognized for contributions to scaling laws in deep learning.
+      Trained ensemble models on 120K+ URL dataset to raise detection accuracy by 21% and reduce false positives by 18%. Packaged as microservices (FastAPI + Redis) supporting ~1,800 req/sec with 80ms latency.
 ---
 
-Alex Johnson is a Senior AI Research Scientist at Meta AI, where he leads groundbreaking work on large language models and multimodal systems. His research has been published in top conferences like NeurIPS and ICML, with over 10,000 citations. Alex is passionate about pushing the boundaries of AI while ensuring ethical development. Outside of work, he enjoys hiking in the Rockies, building custom PCs, and mentoring the next generation of AI talent.
+Yuganshu Jain is an MS Computer Science student (Stony Brook University) and a software engineer who focuses on distributed systems, scalable web and data platforms, and applied machine learning. He has experience building production ETL pipelines, ML-powered dashboards, and distributed microservices. Outside of work, he leads graduate TAs for Logic in CS and mentors junior engineers.
