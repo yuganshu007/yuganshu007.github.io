@@ -1,20 +1,18 @@
 ---
----
 title: Yuganshu Jain
 name_pronunciation: ''
 first_name: Yuganshu
 last_name: Jain
 pronouns: he/him
+summary: Distributed systems engineer crafting resilient data platforms, ML copilots, and developer tooling that deliver measurable business impact. Community-driven builder and active Rotaract member focused on tech education and social impact.
 status:
   icon: 🚀
 superuser: true
 highlight_name: true
 role: MS Computer Science (2024–2026) · Software Development Engineer
-
 organizations:
   - name: Ex Amazon SDE Intern
     url: https://amazon.com/
-
 profiles:
   - icon: phone
     url: 'tel:+19342559075'
@@ -26,13 +24,18 @@ profiles:
     url: 'https://github.com/yuganshu007'
   - icon: brands/linkedin
     url: 'https://www.linkedin.com/in/yuganshu-jain-6047b6165/'
-
+  - icon: globe-alt
+    url: 'https://yuganshu007.github.io/'
+    label: Portfolio
+location:
+  city: New York Metropolitan Area
+  country: USA
 interests:
   - Distributed Systems
   - Systems Security
   - Data Science
   - Data Visualization
-
+  - Human-Centered Developer Tooling
 education:
   - area: M.S. Computer Science
     institution: Stony Brook University
@@ -46,7 +49,6 @@ education:
     date_end: 2021-08-01
     summary: |
       Final Year CGPA: 9.6/10.0. Coursework: Distributed Systems, Advanced Computer Architecture, Advanced DBMS, Operating Systems Lab, Compiler Design Lab, Advanced Java, Web Technology, Big Data.
-
 work:
   - position: Software Development Engineer Intern
     company_name: Amazon
@@ -75,7 +77,6 @@ work:
     summary: |
       • Refactored Android modules in Java/Kotlin to reduce UI stalls and CPU usage, improving responsiveness by ~40%.
       • Integrated Google Maps SDK with Firebase for real-time tracking, lowering delivery times by ~20%.
-
 skills:
   - name: Technical Skills
     items:
@@ -83,32 +84,56 @@ skills:
         description: Java, Python, Kotlin, C++, C, JavaScript, TypeScript, SQL, PL/SQL
         percent: 95
         icon: code-bracket
-      - name: Cloud & Big Data
-        description: AWS (S3, EMR, Glue, Athena, Lambda), Spark, Hadoop
+      - name: Cloud & Data
+        description: AWS (S3, EMR, Glue, Athena, Bedrock, SageMaker, Lambda, CloudFormation, CloudWatch, IAM, QuickSight), Spark, Hadoop
         percent: 90
         icon: cloud
       - name: Web & Backend
-        description: Spring Boot, Flask, FastAPI, React, Next.js, REST, GraphQL, Docker, Kubernetes
+        description: Spring Boot, Spring MVC, Flask, FastAPI, React, Next.js, Angular, Node, REST, GraphQL, Docker, Kubernetes
         percent: 90
         icon: server
-
+      - name: ML & Analytics
+        description: TensorFlow, scikit-learn, PyTorch, Pandas, NumPy, Plotly, OpenCV, MLflow
+        percent: 85
+        icon: chart-bar
+      - name: DevOps & Tools
+        description: Git, Maven, Jenkins, Jira, Kubernetes, Docker, CI/CD
+        percent: 85
+        icon: wrench-screwdriver
+      - name: Product & Delivery
+        description: Agile leadership, stakeholder alignment, design thinking, roadmap strategy
+        percent: 85
+        icon: chart-bar
 languages:
   - name: English
     percent: 100
   - name: Hindi
     percent: 100
-
 projects:
-  - title: Reddit Humor Detection & Funniness Prediction
+  - title: Voice of Advertiser AI Copilot
     date: 2025
-    tech: Python, NLP, TensorFlow, HuggingFace, scikit-learn
+    tech: Bedrock, Spark, Streamlit, OpenSearch
     summary: |
-      Built an end-to-end humor detection system on 1M+ Reddit jokes using TF-IDF, BERT embeddings and Random Forests achieving ~86% accuracy. Implemented LDA topic modeling and regression pipelines to predict funniness scores (R² ≈ 0.87).
+      Built a Bedrock-powered conversational analytics copilot that synthesizes campaign telemetry and sentiment data, delivering 45-minute workflows in under 2 minutes for 500+ Amazon Ads stakeholders.
   - title: Phishing Detection System
     date: 2024
-    tech: Python, scikit-learn, XGBoost, FastAPI, Kubernetes
+    tech: FastAPI, XGBoost, Kubernetes, Redis Streams
     summary: |
-      Trained ensemble models on 120K+ URL dataset to raise detection accuracy by 21% and reduce false positives by 18%. Packaged as microservices (FastAPI + Redis) supporting ~1,800 req/sec with 80ms latency.
+      Designed ensemble-based threat intelligence microservices with autoscaling feature pipelines and 80ms p95 inference latency to protect fintech clients.
+  - title: Reddit Humor Detection & Funniness Prediction
+    date: 2025
+    tech: Python, TensorFlow, HuggingFace, Streamlit
+    summary: |
+      Created an explainable NLP workflow scoring humor intent across 1M+ Reddit posts with ~86% accuracy and R² ≈ 0.87 for funniness forecasting.
+awards:
+  - title: Amazon Ads Leadership Award
+    date: 2025-08-25
+    awarder: Amazon Ads
+    summary: Recognized for shipping the Voice of Advertiser copilot and reshaping advertiser insights workflows globally.
+  - title: Stony Brook Teaching Impact Fellowship
+    date: 2024-12-01
+    awarder: Stony Brook University
+    summary: Honored for revamping the Logic in CS TA program and improving student outcomes.
 ---
 
-Yuganshu Jain is an MS Computer Science student (Stony Brook University) and a software engineer who focuses on distributed systems, scalable web and data platforms, and applied machine learning. He has experience building production ETL pipelines, ML-powered dashboards, and distributed microservices. Outside of work, he leads graduate TAs for Logic in CS and mentors junior engineers.
+Yuganshu Jain builds resilient systems that translate complex data into delightful, trusted products. He thrives at the intersection of cloud infrastructure, applied machine learning, and human-centered design—partnering with product teams and researchers to deliver business-critical outcomes.

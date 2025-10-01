@@ -1,20 +1,23 @@
 ---
-# Leave the homepage title empty to use the site title
 title: ''
 date: 2022-10-24
 type: landing
 
 design:
-  # Default section spacing
   spacing: '6rem'
 
 sections:
   - block: resume-biography-3
+    id: about
     content:
-      # Choose a user profile to display (a folder name within `content/authors/`)
       username: admin
-      text: ''
-      # Show a call-to-action button under your biography? (optional)
+      text: |-
+        ### Professional Summary
+        I'm a distributed systems engineer obsessed with building production-grade data platforms, resilient microservices, and applied machine learning products that ship to stakeholders fast. I mix research-grade rigor with product intuition—whether it's orchestrating ETL pipelines over petabyte-scale telemetry or shipping AI copilots that unblock decision makers in minutes instead of hours.
+
+        - Leads graduate TAs for Logic in CS at Stony Brook, shaping pedagogy and mentoring peers.
+        - Translates research and prototypes into dashboards, APIs, and developer tooling that move business metrics.
+        - Designs systems for reliability: automated rollback strategies, observability-first infrastructure, and graceful degradation everywhere.
       button:
         text: Download CV
         url: uploads/resume.pdf
@@ -23,101 +26,123 @@ sections:
         education: ''
         interests: ''
     design:
-      # Apply a gradient background
       css_class: hbx-bg-gradient
-      # Avatar customization
       avatar:
-        size: medium # Options: small (150px), medium (200px, default), large (320px), xl (400px), xxl (500px)
-        shape: circle # Options: circle (default), square, rounded
+        size: large
+        shape: circle
   - block: markdown
+    id: impact
     content:
-      title: '📚 My Research'
-      subtitle: ''
+      title: Impact Snapshot
+      subtitle: Outcomes shipped across teams and platforms.
       text: |-
-        Use this area to speak to your mission. I'm a research scientist in the Moonshot team at DeepMind. I blog about machine learning, deep learning, and moonshots.
-
-        I apply a range of qualitative and quantitative methods to comprehensively investigate the role of science and technology in the economy.
-
-        Please reach out to collaborate 😃
-    design:
-      columns: '1'
-  - block: collection
-    id: papers
+        <div class="glass-grid">
+          <div class="glass-card">
+            <div class="stat-value">1K+ hrs/day</div>
+            <p class="stat-label">Transcripts processed with EMR/Spark ETL orchestrated in Java with zero-downtime retries.</p>
+          </div>
+          <div class="glass-card">
+            <div class="stat-value">&lt;2s P95</div>
+            <p class="stat-label">Latency for Bedrock-powered Voice of Advertiser copilot serving 500+ Ads stakeholders.</p>
+          </div>
+          <div class="glass-card">
+            <div class="stat-value">10× faster</div>
+            <p class="stat-label">Decision loops via ML observability dashboards and automated alerting pipelines.</p>
+          </div>
+          <div class="glass-card">
+            <div class="stat-value">52% faster</div>
+            <p class="stat-label">Page loads after Next.js micro-frontends, caching strategy, and perf budgets at RSTech Softwares.</p>
+          </div>
+          <div class="glass-card">
+            <div class="stat-value">1.8K req/s</div>
+            <p class="stat-label">Phishing detection microservices with FastAPI + Redis deployed across Kubernetes.</p>
+          </div>
+          <div class="glass-card">
+            <div class="stat-value">25% ↑</div>
+            <p class="stat-label">System reliability uplift by codifying security, observability, and incident runbooks across engineering pods.</p>
+          </div>
+        </div>
+  - block: resume-experience
+    id: experience
     content:
-      title: Featured Publications
+      title: Experience Highlights
+      username: admin
+      subtitle: Building high-leverage systems from scrappy startups to Amazon-scale.
+    design:
+      is_education_first: false
+      date_format: 'Jan 2006'
+  - block: collection
+    id: projects
+    content:
+      title: Flagship Projects
+      subtitle: Production work that blends distributed systems, ML, and product craft.
       filters:
         folders:
-          - publication
+          - project
         featured_only: true
     design:
       view: article-grid
-      columns: 2
-  - block: collection
+      columns: 3
+      fill_image: false
+      show_date: false
+      show_read_time: false
+      show_read_more: false
+  
+  - block: markdown
+    id: community
     content:
-      title: Recent Publications
-      text: ''
-      filters:
-        folders:
-          - publication
-        exclude_featured: false
+      title: Community — Rotaract Club of Visioners League
+      subtitle: Active Member (2020–Present) · India
+      text: |-
+        ### Creating Lasting Impact
+        Through my involvement with the Rotaract Club of Visioners League, I've combined technical expertise with community service to create meaningful change. Technology is most powerful when it serves people; education unlocks potential.
+
+        <div class="glass-grid">
+          <div class="glass-card"><div class="stat-value">4+ Years</div><p class="stat-label">Dedicated service & continuous engagement</p></div>
+          <div class="glass-card"><div class="stat-value">10+</div><p class="stat-label">Events organized — technical workshops & seminars</p></div>
+          <div class="glass-card"><div class="stat-value">1000+</div><p class="stat-label">People reached as direct beneficiaries</p></div>
+          <div class="glass-card"><div class="stat-value">2</div><p class="stat-label">International events led/co-led with global impact</p></div>
+        </div>
+
+        #### Key Contributions
+        - Python & Possibilities Seminar (Organizer, 200+ participants): introduced Python fundamentals and real-world applications. Skills: event management, technical education, public speaking.
+        - Competitive Programming Workshop (Co-organizer, 150+ developers): STL and dynamic programming curriculum. Skills: workshop planning, mentoring, curriculum design.
+        - Deep Learning for COVID-19 Diagnosis (Key contributor, 500+ global attendees): coordinated international experts on AI for public health. Skills: international event management, healthcare tech, research coordination.
+        - Smart Cities Global Scenario Seminar (Lead organizer, 300+ planners & technologists): knowledge exchange on urban technology. Skills: strategic planning, urban tech, international collaboration.
     design:
-      view: citation
-  - block: collection
-    id: talks
-    content:
-      title: Recent & Upcoming Talks
-      filters:
-        folders:
-          - event
-    design:
-      view: card
+      columns: '1'
   - block: collection
     id: news
     content:
-      title: Recent News
-      subtitle: ''
-      text: ''
-      # Page type to display. E.g. post, talk, publication...
+      title: Recent Updates
+      subtitle: Wins, releases, and notes from the trenches.
       page_type: post
-      # Choose how many pages you would like to display (0 = all pages)
-      count: 5
-      # Filter on criteria
+      count: 4
       filters:
-        author: ''
-        category: ''
-        tag: ''
         exclude_featured: false
-        exclude_future: false
-        exclude_past: false
-        publication_type: ''
-      # Choose how many pages you would like to offset by
-      offset: 0
-      # Page order: descending (desc) or ascending (asc) date.
-      order: desc
     design:
-      # Choose a layout view
       view: card
-      # Reduce spacing
-      spacing:
-        padding: [0, 0, 0, 0]
-  - block: cta-card
-    demo: true # Only display this section in the Hugo Blox Builder demo site
+  - block: collection
+    id: teaching
     content:
-      title: 👉 Build your own academic website like this
-      text: |-
-        This site is generated by Hugo Blox Builder - the FREE, Hugo-based open source website builder trusted by 250,000+ academics like you.
-
-        <a class="github-button" href="https://github.com/HugoBlox/hugo-blox-builder" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star HugoBlox/hugo-blox-builder on GitHub">Star</a>
-
-        Easily build anything with blocks - no-code required!
-
-        From landing pages, second brains, and courses to academic resumés, conferences, and tech blogs.
-      button:
-        text: Get Started
-        url: https://hugoblox.com/templates/
+      title: Teaching & Mentorship
+      filters:
+        folders:
+          - teaching
     design:
-      card:
-        # Card background color (CSS class)
-        css_class: 'bg-primary-700'
-        css_style: ''
+      view: article-grid
+      columns: 2
+  - block: markdown
+    id: connect
+    content:
+      title: Let’s Build What’s Next
+      text: |-
+        I'm always up for conversations about large-scale data platforms, reliability engineering, or building product-oriented ML systems. If you're shipping something ambitious—or want to collaborate on research and teaching—drop a line.
+
+        <div class="cta-buttons">
+          <a class="cta-primary" href="mailto:yuganshu.jain@stonybrook.edu">Schedule a conversation</a>
+          <a class="cta-secondary" href="https://www.linkedin.com/in/yuganshu-jain-6047b6165/" target="_blank" rel="noopener">Connect on LinkedIn</a>
+        </div>
+    design:
+      columns: '1'
 ---
