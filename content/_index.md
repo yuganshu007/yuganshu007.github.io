@@ -137,30 +137,6 @@ sections:
         Selected articles and write‑ups available on request. I’ve also written 25+ articles for Stony Brook CS News.
     design:
       columns: '1'
-  
-  - block: markdown
-    id: community
-    content:
-      title: Community — Rotaract Club of Visioners League
-      subtitle: Active Member (2020–Present) · India
-      text: |-
-        ### Creating Lasting Impact
-        Through my involvement with the Rotaract Club of Visioners League, I've combined technical expertise with community service to create meaningful change. Technology is most powerful when it serves people; education unlocks potential.
-
-        <div class="glass-grid">
-          <div class="glass-card"><div class="stat-value">4+ Years</div><p class="stat-label">Dedicated service & continuous engagement</p></div>
-          <div class="glass-card"><div class="stat-value">10+</div><p class="stat-label">Events organized — technical workshops & seminars</p></div>
-          <div class="glass-card"><div class="stat-value">1000+</div><p class="stat-label">People reached as direct beneficiaries</p></div>
-          <div class="glass-card"><div class="stat-value">2</div><p class="stat-label">International events led/co-led with global impact</p></div>
-        </div>
-
-        #### Key Contributions
-        - Python & Possibilities Seminar (Organizer, 200+ participants): introduced Python fundamentals and real-world applications. Skills: event management, technical education, public speaking.
-        - Competitive Programming Workshop (Co-organizer, 150+ developers): STL and dynamic programming curriculum. Skills: workshop planning, mentoring, curriculum design.
-        - Deep Learning for COVID-19 Diagnosis (Key contributor, 500+ global attendees): coordinated international experts on AI for public health. Skills: international event management, healthcare tech, research coordination.
-        - Smart Cities Global Scenario Seminar (Lead organizer, 300+ planners & technologists): knowledge exchange on urban technology. Skills: strategic planning, urban tech, international collaboration.
-    design:
-      columns: '1'
   # Volunteering
   - block: markdown
     id: volunteering
