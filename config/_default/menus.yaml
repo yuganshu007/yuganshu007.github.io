@@ -4,6 +4,9 @@
   #   The weight parameter defines the order that the links will appear in.
 
 main:
+  - name: Resume
+    url: /uploads/resume.pdf
+    weight: 5
   - name: About
     url: /#about
     weight: 10

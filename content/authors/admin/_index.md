@@ -27,6 +27,9 @@ profiles:
   - icon: globe-alt
     url: 'https://yuganshu007.github.io/'
     label: Portfolio
+  - icon: file
+    url: '/uploads/resume.pdf'
+    label: Download CV
 location:
   city: New York Metropolitan Area
   country: USA
