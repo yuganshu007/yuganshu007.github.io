@@ -4,30 +4,30 @@
   #   The weight parameter defines the order that the links will appear in.
 
 main:
-  - name: Resume
-    url: /uploads/Yuganshu_Jain_Resume.pdf
-    weight: 5
+  - name: Home
+    url: /
+    weight: 1
   - name: About
     url: /#about
     weight: 10
-  - name: Highlights
-    url: /#impact
-    weight: 15
   - name: Experience
     url: /#experience
     weight: 20
   - name: Projects
     url: /#projects
     weight: 30
-  - name: Community
-    url: /#community
+  - name: Publications
+    url: /#publications
     weight: 40
-  - name: News
-    url: /#news
-    weight: 60
-  - name: Teaching
-    url: /#teaching
-    weight: 70
+  - name: Volunteering
+    url: /#volunteering
+    weight: 50
   - name: Contact
-    url: /#connect
+    url: /#contact
+    weight: 60
+  - name: Get In Touch
+    url: /#contact
+    weight: 70
+  - name: Resume
+    url: /uploads/Yuganshu_Jain_Resume.pdf
     weight: 90
