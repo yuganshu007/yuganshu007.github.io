@@ -20,7 +20,7 @@ sections:
         - Designs systems for reliability: automated rollback strategies, observability-first infrastructure, and graceful degradation everywhere.
       button:
         text: Download CV
-        url: uploads/resume.pdf
+        url: uploads/Yuganshu_Jain_Resume.pdf
       headings:
         about: ''
         education: ''

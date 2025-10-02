@@ -28,7 +28,7 @@ profiles:
     url: 'https://yuganshu007.github.io/'
     label: Portfolio
   - icon: file
-    url: '/uploads/resume.pdf'
+    url: '/uploads/Yuganshu_Jain_Resume.pdf'
     label: Download CV
 location:
   city: New York Metropolitan Area
