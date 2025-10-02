@@ -28,7 +28,7 @@ sections:
     design:
       css_class: hbx-bg-gradient
       avatar:
-        size: large
+        size: xl
         shape: circle
   - block: markdown
     id: impact
