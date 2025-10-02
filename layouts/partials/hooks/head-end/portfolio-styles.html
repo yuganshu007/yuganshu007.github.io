@@ -16,4 +16,39 @@
   .btn-secondary{background:#f8fafc;color:var(--accent)}
   .dark .btn-secondary{background:#0b1220;color:#c7d2fe}
   .skill-pill{display:inline-block;border:1px solid var(--border);padding:.3rem .6rem;border-radius:999px;font-size:.9rem;color:var(--subtle)}
+  /* Projects grid */
+  .project-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 1rem}
+  .project-tab{cursor:pointer;padding:.45rem .9rem;border:1px solid var(--border);border-radius:999px;font-weight:600;color:var(--subtle)}
+  .project-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .project-grid{display:grid;gap:1.1rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .project-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff}
+  .dark .project-card{background:#0b1220}
+  .project-card img{width:100%;height:160px;object-fit:cover}
+  .project-body{padding:0.9rem}
+  .project-title{font-weight:700;margin:0 0 .25rem}
+  .project-meta{font-size:.85rem;color:var(--subtle);margin-bottom:.5rem}
+  .project-body ul{margin:.35rem 0 .5rem 1.05rem}
+  .project-body li{margin:.15rem 0}
 </style>
+<script>
+  // Project filtering
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = Array.from(document.querySelectorAll('[data-project-tab]'));
+    const cards = Array.from(document.querySelectorAll('[data-project-cat]'));
+    if (!tabs.length || !cards.length) return;
+    const show = (cat) => {
+      cards.forEach(c => {
+        const k = c.getAttribute('data-project-cat');
+        c.style.display = (!cat || cat === 'all' || k === cat) ? '' : 'none';
+      });
+    };
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      show(t.getAttribute('data-project-tab'));
+    }));
+    // default
+    const first = tabs.find(x => x.getAttribute('data-project-tab') === 'all') || tabs[0];
+    if (first){ first.classList.add('active'); show(first.getAttribute('data-project-tab')); }
+  });
+</script>

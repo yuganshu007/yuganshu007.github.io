@@ -59,6 +59,8 @@ sections:
         - Created an AI-powered recommendation system with interactive Streamlit dashboard and Bedrock-integrated chatbot serving 32,000+ Amazon Ads stakeholders, enabling 10x faster data-driven decisions.
         _Tech:_ Java, Python, AWS EMR, Apache Spark, Amazon Bedrock, S3, Lambda, Athena, Glue, Streamlit
 
+        <img src="https://source.unsplash.com/1200x500/?newyork,office,technology" alt="Amazon internship work environment (illustrative)" style="width:100%;border-radius:12px;border:1px solid rgba(148,163,184,.35);margin:.75rem 0"/>
+
         #### Stony Brook University — Graduate Teaching Assistant & Research Content Writer
         Computer Science Department · Sept 2024 – Present · New York, United States
 
@@ -90,25 +92,62 @@ sections:
       title: Featured Projects
       subtitle: Cutting-edge solutions in AI/ML, cybersecurity, and scalable systems
       text: |-
-        ##### AI/ML — Voice of Advertiser (VOA) AI Analytics Engine
-        An analytics platform integrating Bedrock Claude 3.5 with advanced prompt engineering. Processes 1,000+ hours/day of advertiser call transcripts with 97% extraction accuracy across 10 business insight categories.
-        - Served 32,000+ Amazon Ads stakeholders; reduced manual analysis from 45 minutes to 2 minutes per call; 10x faster decisions; 18% improvement in advertiser cost‑per‑click.
-        _Tech:_ Python, Amazon Bedrock (Claude 3.5), Apache Spark, AWS EMR, S3, Lambda, Streamlit
+        <div class="project-tabs">
+          <button class="project-tab" data-project-tab="all">All</button>
+          <button class="project-tab" data-project-tab="ai">AI/ML</button>
+          <button class="project-tab" data-project-tab="security">Security Research</button>
+          <button class="project-tab" data-project-tab="cyber">Cybersecurity</button>
+          <button class="project-tab" data-project-tab="fullstack">Full‑Stack</button>
+        </div>
+        <div class="project-grid">
+          <article class="project-card" data-project-cat="ai">
+            <img src="https://source.unsplash.com/800x500/?ai,analytics,dashboard" alt="AI analytics dashboard (illustrative)"/>
+            <div class="project-body">
+              <h4 class="project-title">Voice of Advertiser (VOA) AI Analytics Engine</h4>
+              <div class="project-meta">Python • Bedrock (Claude 3.5) • Spark • EMR • S3 • Lambda • Streamlit</div>
+              <ul>
+                <li>Processes 1,000+ hours/day of transcripts with 97% extraction accuracy.</li>
+                <li>Reduced review time from 45 min → 2 min; 18% CPC improvement.</li>
+              </ul>
+            </div>
+          </article>
 
-        ##### Security Research — Memory Corruption Detection Framework
-        Memory safety framework combining static analysis, dynamic fuzzing, and ML to detect buffer overflows, heap corruption, and ROP chains across 10,000+ binaries.
-        - Coverage‑guided fuzzing, ASLR bypass detection, automated exploit scaffolds; integrations with AddressSanitizer and Valgrind.
-        _Tech:_ Python, C++, Machine Learning, Static/Dynamic Analysis, AddressSanitizer
+          <article class="project-card" data-project-cat="security">
+            <img src="https://source.unsplash.com/800x500/?binary,code,security" alt="Static & dynamic analysis (illustrative)"/>
+            <div class="project-body">
+              <h4 class="project-title">Memory Corruption Detection Framework</h4>
+              <div class="project-meta">Python • C++ • ML • Static/Dynamic Analysis • AddressSanitizer</div>
+              <ul>
+                <li>Detects buffer/heap corruption and ROP chains across 10,000+ binaries.</li>
+                <li>Coverage‑guided fuzzing and ASLR bypass detection with automated exploits.</li>
+              </ul>
+            </div>
+          </article>
 
-        ##### Cybersecurity — Phishing Detection System
-        Ensemble ML system using Decision Trees, Random Forest, XGBoost, and DNNs trained on 100K+ URL samples. Achieved 20% improvement in phishing detection accuracy with real‑time inference.
-        - Real‑time inference; L1/L2‑regularized XGBoost; productionized APIs.
-        _Tech:_ Python, XGBoost, Deep Learning, Decision Trees, Random Forest, scikit‑learn
+          <article class="project-card" data-project-cat="cyber">
+            <img src="https://source.unsplash.com/800x500/?phishing,security,shield" alt="Phishing protection (illustrative)"/>
+            <div class="project-body">
+              <h4 class="project-title">Phishing Detection System</h4>
+              <div class="project-meta">Python • XGBoost • DNN • scikit‑learn</div>
+              <ul>
+                <li>100K+ URL dataset; +20% detection accuracy; real‑time inference.</li>
+                <li>Robustness via L1/L2 regularization and productionized scoring APIs.</li>
+              </ul>
+            </div>
+          </article>
 
-        ##### Full‑Stack — Scalable B2B E‑commerce Platform
-        Full‑stack platform with payment gateways, QA pipelines, and RESTful orchestration. Reduced transaction errors by 30% and improved reliability by 25%.
-        - Supports 2,500+ concurrent users; 40% faster DB queries; microservices on Apache Cassandra.
-        _Tech:_ React.js, TypeScript, PostgreSQL, Next.js, Docker, Apache Cassandra, REST APIs
+          <article class="project-card" data-project-cat="fullstack">
+            <img src="https://source.unsplash.com/800x500/?ecommerce,shopping,technology" alt="E‑commerce platform (illustrative)"/>
+            <div class="project-body">
+              <h4 class="project-title">Scalable B2B E‑commerce Platform</h4>
+              <div class="project-meta">React • TypeScript • PostgreSQL • Next.js • Docker • Cassandra</div>
+              <ul>
+                <li>Supports 2,500+ concurrent users; −30% transaction errors.</li>
+                <li>−40% DB query times with microservices and data modeling.</li>
+              </ul>
+            </div>
+          </article>
+        </div>
   - block: markdown
     id: education
     content:
