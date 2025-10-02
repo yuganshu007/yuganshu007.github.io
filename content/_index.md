@@ -7,17 +7,38 @@ design:
   spacing: '6rem'
 
 sections:
+  # Interactive hero first impression
+  - block: markdown
+    id: hero
+    content:
+      title: ''
+      text: |-
+        <section class="interactive-hero">
+          <div class="hero-badge">Craft + Curiosity</div>
+          <h1 class="hero-title">Yuganshu Jain</h1>
+          <div class="typewriter">
+            <span id="typed-phrases" data-phrases='["I build delightful software.", "I turn ideas into shipped products.", "I obsess over quality, polish, and speed."]'></span>
+            <span class="cursor">|</span>
+          </div>
+          <div class="hero-cta">
+            <a class="cta-primary" href="/uploads/Yuganshu_Jain_Resume.pdf">Download CV</a>
+            <a class="cta-secondary" href="#projects">View Projects</a>
+          </div>
+        </section>
+    design:
+      columns: '1'
+
+  # Updated summary (no distributed-systems phrasing)
   - block: resume-biography-3
     id: about
     content:
       username: admin
       text: |-
-        ### Professional Summary
-        I'm a distributed systems engineer obsessed with building production-grade data platforms, resilient microservices, and applied machine learning products that ship to stakeholders fast. I mix research-grade rigor with product intuition—whether it's orchestrating ETL pipelines over petabyte-scale telemetry or shipping AI copilots that unblock decision makers in minutes instead of hours.
+        I’m a builder who blends engineering depth with product taste. I care about tiny details, fast feedback, and making tools that feel effortless.
 
-        - Leads graduate TAs for Logic in CS at Stony Brook, shaping pedagogy and mentoring peers.
-        - Translates research and prototypes into dashboards, APIs, and developer tooling that move business metrics.
-        - Designs systems for reliability: automated rollback strategies, observability-first infrastructure, and graceful degradation everywhere.
+        - Turn fuzzy ideas into crisp interfaces, reusable utilities, and accessible experiences.
+        - Ship with momentum—short loops, visible progress, and thoughtful defaults.
+        - Sweat the finish: performance, polish, and clear writing to match the craft.
       button:
         text: Download CV
         url: uploads/Yuganshu_Jain_Resume.pdf
