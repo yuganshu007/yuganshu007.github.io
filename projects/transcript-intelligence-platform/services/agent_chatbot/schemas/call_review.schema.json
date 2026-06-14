@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CallReview",
+  "description": "Structured review the agent must produce for each advertiser call transcript.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["call_id", "summary", "sentiment", "action_items", "risk_flags", "confidence"],
+  "properties": {
+    "call_id": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 10, "maxLength": 1200 },
+    "sentiment": { "type": "string", "enum": ["positive", "neutral", "negative"] },
+    "action_items": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "maxItems": 10
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["billing_dispute", "policy_violation", "churn_risk", "compliance", "none"]
+      }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}
