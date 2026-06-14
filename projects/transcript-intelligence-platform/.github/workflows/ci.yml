@@ -1,0 +1,72 @@
+name: CI — Transcript Intelligence Platform
+
+on:
+  push:
+    paths:
+      - 'projects/transcript-intelligence-platform/**'
+  pull_request:
+    paths:
+      - 'projects/transcript-intelligence-platform/**'
+
+defaults:
+  run:
+    working-directory: projects/transcript-intelligence-platform
+
+jobs:
+  test:
+    name: "Tests & Benchmarks"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Generate synthetic data
+        run: make data
+
+      - name: Run test suite
+        run: make test
+
+      - name: Run throughput benchmark (Bullet 1)
+        run: .venv/bin/python -m benchmarks.throughput_benchmark
+
+      - name: Run latency benchmark (Bullet 2)
+        run: .venv/bin/python -m benchmarks.latency_p95
+
+      - name: Run data quality benchmark (Bullet 3)
+        run: .venv/bin/python -m benchmarks.data_quality
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          fail_ci_if_error: false
+
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install lint tools
+        working-directory: projects/transcript-intelligence-platform
+        run: |
+          python -m pip install ruff black
+      - name: Ruff check
+        working-directory: projects/transcript-intelligence-platform
+        run: ruff check src/ benchmarks/ tests/ scripts/ || true
+      - name: Black check
+        working-directory: projects/transcript-intelligence-platform
+        run: black --check src/ benchmarks/ tests/ scripts/ || true
