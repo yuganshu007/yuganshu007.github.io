@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# generated synthetic data (regenerate with `make data`)
+data/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# benchmark machine-specific raw logs (committed summaries live in docs/results/)
+*.log
+.DS_Store

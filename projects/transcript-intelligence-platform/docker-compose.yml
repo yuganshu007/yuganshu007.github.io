@@ -1,0 +1,28 @@
+# Local development stack. Each service is independently runnable; this compose file
+# wires the agent API and the analytics dashboard for an end-to-end local demo.
+services:
+  agent-api:
+    build:
+      context: .
+      dockerfile: docker/agent.Dockerfile
+    environment:
+      # Leave AWS_* unset to use the faithful local mock backend.
+      - LLM_BACKEND=${LLM_BACKEND:-mock}
+      - BEDROCK_MODEL_ID=anthropic.claude-3-5-haiku-20241022-v1:0
+      - LOG_LEVEL=INFO
+    ports:
+      - "8080:8080"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    environment:
+      - ATHENA_BACKEND=${ATHENA_BACKEND:-duckdb}
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data:ro
+    ports:
+      - "8501:8501"
+    depends_on:
+      - agent-api
