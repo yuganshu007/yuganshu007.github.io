@@ -1,23 +1,24 @@
 """
 JSON-schema validation for Bedrock outputs.
 
-All 10 insight categories extracted by VOAJob from Gong.io transcripts,
-as specified in the Amazon SD Curie Irène VOA Analytics Platform (May–Aug 2025).
+This module mirrors the real production Java enum:
+  com.amazon.sd.curie.amber.jobs.voa.analysis.MetricCategory
 
-Category reference (from PDF §AI/ML Integration):
-  1.  Identification Metrics  — amazon_rep, ASIN mentions, campaign names
-  2.  Campaign Structure      — SP/SB/SD type, targeting method
-  3.  Campaign Scale          — scale issues, targeting limitations
-  4.  Budget & Bidding        — strategy, utilization, seasonal adjustments
-  5.  Call Analysis           — sentiment, topics, urgency classification
-  6.  Seasonal Context        — peak season timing, seasonal pressure
-  7.  Action Items            — commitment tracking, optimization recs
-  8.  Complaint Analysis      — pain point categorization, severity
-  9.  Feature Adaptability    — knowledge gaps, learning progression
-  10. Performance Metrics Sentiment — dual-perspective ROAS/CPC sentiment
+The MetricCategory enum defines the exact 10 insight categories, their
+extraction prompts, and their JSON schemas used by VOAJob in production.
+Python field names use camelCase to match the Java enum's JSON keys exactly.
 
-Validation failure → retry via ADDITIONAL_PROMPT_FOR_RETRY (mirrors BedRockUtils.java).
-95% extraction accuracy achieved in production (PDF §AI/ML Integration).
+Categories (verbatim from the Java enum):
+  1.  identificationMetrics
+  2.  campaignStructure
+  3.  campaignScale
+  4.  budgetAndBidding
+  5.  callAnalysis
+  6.  seasonalContext
+  7.  actionItems
+  8.  complaintAnalysis
+  9.  featureAdaptability
+  10. performanceMetricsSentiment
 """
 
 from __future__ import annotations
@@ -25,269 +26,451 @@ from __future__ import annotations
 import json
 import re
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
 
 # ---------------------------------------------------------------------------
-# Shared enumerations
+# MetricCategory — Python mirror of the Java enum
+# Contains the exact extraction prompts and JSON schemas used in production
+# ---------------------------------------------------------------------------
+
+class MetricCategory(Enum):
+    """
+    Mirror of com.amazon.sd.curie.amber.jobs.voa.analysis.MetricCategory.
+
+    Each member holds: (json_key, extraction_instructions, output_schema)
+    These are the EXACT prompts sent to Claude 3.5 Haiku in production.
+    """
+
+    IDENTIFICATION_METRICS = (
+        "identificationMetrics",
+        (
+            "IDENTIFICATION METRICS EXTRACTION: Extract Amazon representative name from transcript "
+            "introductions, ASINs mentioned, campaign names mentioned, and tenure information "
+            "discussed. Only extract values explicitly mentioned in the transcript."
+        ),
+        '{"identificationMetrics": {"amazonRepName": "string|null", "asinMentioned": ["string"],'
+        ' "campaignNames": ["string"], "tenureInformation": "string|null"}}',
+    )
+
+    CAMPAIGN_STRUCTURE = (
+        "campaignStructure",
+        (
+            "CAMPAIGN STRUCTURE EXTRACTION: Extract the primary campaign type (Sponsored Products, "
+            "Sponsored Brands, or Sponsored Display) and targeting types mentioned (Keyword, Product, "
+            "Category, ASIN, Dynamic, Audience, Views Retargeting, Purchase Retargeting). Only extract "
+            "campaign types and targeting methods explicitly discussed in the call."
+        ),
+        '{"campaignStructure": {"primaryCampaignType": '
+        '"Sponsored_Products|Sponsored_Brands|Sponsored_Display|null", "targetingTypes": ["string"]}}',
+    )
+
+    CAMPAIGN_SCALE = (
+        "campaignScale",
+        (
+            "CAMPAIGN SCALE EXTRACTION: Extract information about campaign scale including impression "
+            "volume, reach, frequency, budget utilization, and advertiser perception of scale. Pay "
+            "special attention to any mentions of limited scale, scale issues, or targeting restrictions "
+            "that might be limiting campaign performance."
+        ),
+        '{"campaignScale": {"scaleIssuesReported": "boolean", "limitedTargetingMentioned": "boolean",'
+        ' "scalePerception": "good|limited|very_limited|null", "targetingRestrictions": ["string"],'
+        ' "recommendedScaleImprovements": ["string"]}}',
+    )
+
+    BUDGET_AND_BIDDING = (
+        "budgetAndBidding",
+        (
+            "BUDGET AND BIDDING EXTRACTION: Extract daily budget, monthly budget, budget utilization "
+            "status, bidding strategy, seasonal strategy, and bid adjustments. For budgets, extract "
+            "specific amounts only if explicitly mentioned. For bidding strategy, only classify as "
+            "aggressive, conservative, or competitive if explicitly stated."
+        ),
+        '{"budgetAndBidding": {"dailyBudget": "number|null", "monthlyBudget": "number|null",'
+        ' "budgetUtilization": "budget_limited|under_spending|optimal|null", "biddingStrategy":'
+        ' "aggressive|conservative|competitive|null", "seasonalStrategy":'
+        ' "peak_season|off_season|null", "bidAdjustments": ["string"]}}',
+    )
+
+    CALL_ANALYSIS = (
+        "callAnalysis",
+        (
+            "CALL ANALYSIS EXTRACTION: Extract primary topics discussed, primary topic sentiment, "
+            "secondary topics, resolution type, overall sentiment, customer experience level, urgency "
+            "level, current issues, past issues, past issue status, and resolution summary. For "
+            "sentiment, experience levels, and urgency, use null unless explicitly stated."
+        ),
+        '{"callAnalysis": {"primaryTopics": ["string"], "primaryTopicSentiment":'
+        ' "positive|negative|neutral|mixed|null", "secondaryTopics": ["string"], "resolutionType":'
+        ' "string|null", "overallSentiment": "positive|neutral|negative|null", "customerExperience":'
+        ' "beginner|intermediate|experienced|expert|null", "urgencyLevel":'
+        ' "low|medium|high|seasonal_pressure|null", "currentIssue": "string|null", "pastIssue":'
+        ' "string|null", "pastIssueStatus": "resolved|not_resolved|null", "resolutionSummary":'
+        ' "string|null"}}',
+    )
+
+    SEASONAL_CONTEXT = (
+        "seasonalContext",
+        (
+            "SEASONAL CONTEXT EXTRACTION: Extract seasonal pressure (true/false), peak season timing, "
+            "and seasonal events mentioned. Only mark seasonal pressure as true if explicitly confirmed. "
+            "Extract peak season timing only if specific dates or periods are mentioned."
+        ),
+        '{"seasonalContext": {"seasonalPressure": "boolean", "peakSeasonTiming": "string|null",'
+        ' "seasonalEvents": ["string"]}}',
+    )
+
+    ACTION_ITEMS = (
+        "actionItems",
+        (
+            "ACTION ITEMS EXTRACTION: Extract immediate actions, bid optimizations, scale improvement "
+            "actions, and next steps agreed upon in the call. Only include actions that were explicitly "
+            "agreed upon or committed to during the conversation."
+        ),
+        '{"actionItems": {"immediateActions": ["string"], "bidOptimizations": ["string"], "nextSteps":'
+        ' ["string"], "scaleImprovementActions": ["string"]}}',
+    )
+
+    COMPLAINT_ANALYSIS = (
+        "complaintAnalysis",
+        (
+            "COMPLAINT ANALYSIS EXTRACTION: Extract complaint keywords, complaint phrases, program "
+            "mentioned in complaints, complaint severity, scale-related complaints, and program-specific "
+            "complaints. Look for terms like: 'ads shown too often', 'irrelevant ads', 'poor targeting', "
+            "'wasted spend'."
+        ),
+        '{"complaintAnalysis": {"complaintKeywords": ["string"], "complaintPhrases": ["string"],'
+        ' "programMentioned": "string|null", "complaintSeverity": "low|medium|high|null",'
+        ' "scaleRelatedComplaints": ["string"], "programSpecificComplaints": {"SD": ["string"],'
+        ' "SP": ["string"], "SB": ["string"]}}}',
+    )
+
+    FEATURE_ADAPTABILITY = (
+        "featureAdaptability",
+        (
+            "FEATURE ADAPTABILITY EXTRACTION: Extract known features, discussed features, learned "
+            "features, feature adaptability level, features advertiser knows, features advertiser talks "
+            "about, and features advertiser learned during the call."
+        ),
+        '{"featureAdaptability": {"knownFeatures": ["string"], "discussedFeatures": ["string"],'
+        ' "learnedFeatures": ["string"], "featureAdaptability": "string|null",'
+        ' "featuresAdvertisersKnows": ["string"], "featuresAdvertiserTalksAbout": ["string"],'
+        ' "featuresAdvertiserLearnt": ["string"]}}',
+    )
+
+    PERFORMANCE_METRICS_SENTIMENT = (
+        "performanceMetricsSentiment",
+        (
+            "PERFORMANCE METRICS SENTIMENT EXTRACTION: Extract sentiment for ROAS, CPC, CPM, vCPM, "
+            "targeting clauses, and bidding strategies from both Amazon and advertiser perspectives. "
+            "Also extract overall advertiser perception of campaign performance."
+        ),
+        '{"performanceMetricsSentiment": {"roasSentiment": "positive|negative|neutral|null",'
+        ' "cpcSentiment": "positive|negative|neutral|null", "cpmSentiment":'
+        ' "positive|negative|neutral|null", "vcpmSentiment": "positive|negative|neutral|null",'
+        ' "targetingClausesSentiment": "positive|negative|neutral|null", "biddingStrategiesSentiment":'
+        ' "positive|negative|neutral|null", "roasSentimentAdvertiser": "positive|negative|neutral|null",'
+        ' "cpcSentimentAdvertiser": "positive|negative|neutral|null", "vcpmSentimentAdvertiser":'
+        ' "positive|negative|neutral|null", "targetingClausesSentimentAdvertiser":'
+        ' "positive|negative|neutral|null", "advertiserPerception": "positive|negative|neutral|null"}}',
+    )
+
+    def __init__(self, json_key: str, instructions: str, schema: str):
+        self.json_key     = json_key
+        self.instructions = instructions
+        self.schema       = schema
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models — matching MetricCategory JSON schemas exactly
 # ---------------------------------------------------------------------------
 
 class SentimentEnum(str, Enum):
     positive = "positive"
-    neutral  = "neutral"
     negative = "negative"
+    neutral  = "neutral"
+    mixed    = "mixed"
 
 
 class UrgencyEnum(str, Enum):
-    low    = "low"
-    medium = "medium"
-    high   = "high"
+    low              = "low"
+    medium           = "medium"
+    high             = "high"
+    seasonal_pressure = "seasonal_pressure"
 
 
-class SeverityEnum(str, Enum):
-    low    = "low"
-    medium = "medium"
-    high   = "high"
-    critical = "critical"
+class CustomerExperienceEnum(str, Enum):
+    beginner     = "beginner"
+    intermediate = "intermediate"
+    experienced  = "experienced"
+    expert       = "expert"
+
+
+class ScalePerceptionEnum(str, Enum):
+    good         = "good"
+    limited      = "limited"
+    very_limited = "very_limited"
 
 
 class CampaignTypeEnum(str, Enum):
-    sponsored_products = "Sponsored Products"
-    sponsored_brands   = "Sponsored Brands"
-    sponsored_display  = "Sponsored Display"
-    unknown            = "unknown"
+    sponsored_products = "Sponsored_Products"
+    sponsored_brands   = "Sponsored_Brands"
+    sponsored_display  = "Sponsored_Display"
+
+
+class BudgetUtilizationEnum(str, Enum):
+    budget_limited = "budget_limited"
+    under_spending = "under_spending"
+    optimal        = "optimal"
+
+
+class BiddingStrategyEnum(str, Enum):
+    aggressive  = "aggressive"
+    conservative = "conservative"
+    competitive  = "competitive"
+
+
+class ComplaintSeverityEnum(str, Enum):
+    low    = "low"
+    medium = "medium"
+    high   = "high"
 
 
 # ---------------------------------------------------------------------------
-# Category 1 — Identification Metrics
+# Category 1 — identificationMetrics
 # ---------------------------------------------------------------------------
 
 class IdentificationMetrics(BaseModel):
-    amazon_rep_name:    Optional[str]       = None
-    asin_mentions:      List[str]           = Field(default_factory=list)
-    campaign_names:     List[str]           = Field(default_factory=list)
-    advertiser_id:      Optional[str]       = None
-    marketplace_id:     Optional[str]       = None
+    amazonRepName:     Optional[str]   = None
+    asinMentioned:     List[str]       = Field(default_factory=list)
+    campaignNames:     List[str]       = Field(default_factory=list)
+    tenureInformation: Optional[str]   = None
 
 
 # ---------------------------------------------------------------------------
-# Category 2 — Campaign Structure
+# Category 2 — campaignStructure
 # ---------------------------------------------------------------------------
 
 class CampaignStructure(BaseModel):
-    primary_campaign_type: CampaignTypeEnum     = CampaignTypeEnum.unknown
-    secondary_types:        List[str]           = Field(default_factory=list)
-    targeting_methods:      List[str]           = Field(default_factory=list)  # keyword, product, audience
-    campaign_count:         int                 = 0
+    primaryCampaignType: Optional[CampaignTypeEnum] = None
+    targetingTypes:      List[str]                  = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 3 — Campaign Scale
+# Category 3 — campaignScale
 # ---------------------------------------------------------------------------
 
 class CampaignScale(BaseModel):
-    scale_issues_identified:     bool       = False
-    targeting_limitations:       List[str]  = Field(default_factory=list)
-    reach_concerns:              bool       = False
-    impression_share_mentioned:  bool       = False
+    scaleIssuesReported:          bool                        = False
+    limitedTargetingMentioned:    bool                        = False
+    scalePerception:              Optional[ScalePerceptionEnum] = None
+    targetingRestrictions:        List[str]                   = Field(default_factory=list)
+    recommendedScaleImprovements: List[str]                   = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 4 — Budget & Bidding
+# Category 4 — budgetAndBidding
 # ---------------------------------------------------------------------------
 
-class BudgetBidding(BaseModel):
-    bidding_strategy_discussed:   bool            = False
-    budget_utilization_concern:   bool            = False
-    seasonal_adjustment_needed:   bool            = False
-    auto_bidding_requested:       bool            = False
-    cpc_concern:                  bool            = False
-    budget_exhaustion:            bool            = False
+class BudgetAndBidding(BaseModel):
+    dailyBudget:      Optional[float]                  = None
+    monthlyBudget:    Optional[float]                  = None
+    budgetUtilization: Optional[BudgetUtilizationEnum] = None
+    biddingStrategy:  Optional[BiddingStrategyEnum]    = None
+    seasonalStrategy: Optional[str]                    = None
+    bidAdjustments:   List[str]                        = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 5 — Call Analysis (core — required fields)
+# Category 5 — callAnalysis (required)
 # ---------------------------------------------------------------------------
 
 class CallAnalysis(BaseModel):
-    overall_sentiment:    SentimentEnum     = SentimentEnum.neutral
-    urgency:              UrgencyEnum       = UrgencyEnum.low
-    primary_topics:       List[str]         = Field(..., min_length=1)
-    secondary_topics:     List[str]         = Field(default_factory=list)
-    call_resolution:      bool              = False
-    follow_up_required:   bool              = False
+    primaryTopics:         List[str]                        = Field(..., min_length=1)
+    primaryTopicSentiment: Optional[SentimentEnum]          = None
+    secondaryTopics:       List[str]                        = Field(default_factory=list)
+    resolutionType:        Optional[str]                    = None
+    overallSentiment:      Optional[SentimentEnum]          = SentimentEnum.neutral
+    customerExperience:    Optional[CustomerExperienceEnum] = None
+    urgencyLevel:          Optional[UrgencyEnum]            = None
+    currentIssue:          Optional[str]                    = None
+    pastIssue:             Optional[str]                    = None
+    pastIssueStatus:       Optional[str]                    = None
+    resolutionSummary:     Optional[str]                    = None
 
-    @field_validator("primary_topics", mode="before")
+    @field_validator("primaryTopics", mode="before")
     @classmethod
     def coerce_to_list(cls, v):
-        return [v] if isinstance(v, str) else v
+        return [v] if isinstance(v, str) else (v or ["general"])
 
 
 # ---------------------------------------------------------------------------
-# Category 6 — Seasonal Context
+# Category 6 — seasonalContext
 # ---------------------------------------------------------------------------
 
 class SeasonalContext(BaseModel):
-    peak_season_discussed:    bool       = False
-    seasonal_pressure:        bool       = False
-    q4_mentioned:             bool       = False
-    prime_day_mentioned:      bool       = False
+    seasonalPressure: bool       = False
+    peakSeasonTiming: Optional[str] = None
+    seasonalEvents:   List[str]  = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 7 — Action Items
+# Category 7 — actionItems
 # ---------------------------------------------------------------------------
 
 class ActionItems(BaseModel):
-    immediate_actions:        List[str]  = Field(default_factory=list)
-    optimization_recs:        List[str]  = Field(default_factory=list)
-    commitments_made:         List[str]  = Field(default_factory=list)
-    follow_up_date_mentioned: bool       = False
+    immediateActions:       List[str] = Field(default_factory=list)
+    bidOptimizations:       List[str] = Field(default_factory=list)
+    nextSteps:              List[str] = Field(default_factory=list)
+    scaleImprovementActions: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 8 — Complaint Analysis
+# Category 8 — complaintAnalysis
 # ---------------------------------------------------------------------------
+
+class ProgramSpecificComplaints(BaseModel):
+    SD: List[str] = Field(default_factory=list)
+    SP: List[str] = Field(default_factory=list)
+    SB: List[str] = Field(default_factory=list)
+
 
 class ComplaintAnalysis(BaseModel):
-    complaint_keywords:       List[str]      = Field(default_factory=list)
-    severity:                 SeverityEnum   = SeverityEnum.low
-    competitor_mentioned:     bool           = False
-    competitor_names:         List[str]      = Field(default_factory=list)
-    pricing_complaint:        bool           = False
-    feature_gap_complaint:    bool           = False
+    complaintKeywords:        List[str]                       = Field(default_factory=list)
+    complaintPhrases:         List[str]                       = Field(default_factory=list)
+    programMentioned:         Optional[str]                   = None
+    complaintSeverity:        Optional[ComplaintSeverityEnum] = None
+    scaleRelatedComplaints:   List[str]                       = Field(default_factory=list)
+    programSpecificComplaints: ProgramSpecificComplaints      = Field(default_factory=ProgramSpecificComplaints)
 
 
 # ---------------------------------------------------------------------------
-# Category 9 — Feature Adaptability
+# Category 9 — featureAdaptability
 # ---------------------------------------------------------------------------
 
 class FeatureAdaptability(BaseModel):
-    knowledge_gaps_identified:  List[str]  = Field(default_factory=list)
-    feature_requests:           List[str]  = Field(default_factory=list)
-    learning_opportunity:       bool       = False
-    onboarding_issue:           bool       = False
+    knownFeatures:              List[str]      = Field(default_factory=list)
+    discussedFeatures:          List[str]      = Field(default_factory=list)
+    learnedFeatures:            List[str]      = Field(default_factory=list)
+    featureAdaptability:        Optional[str]  = None
+    featuresAdvertisersKnows:   List[str]      = Field(default_factory=list)
+    featuresAdvertiserTalksAbout: List[str]    = Field(default_factory=list)
+    featuresAdvertiserLearnt:   List[str]      = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
-# Category 10 — Performance Metrics Sentiment
+# Category 10 — performanceMetricsSentiment
 # ---------------------------------------------------------------------------
 
 class PerformanceMetricsSentiment(BaseModel):
-    roas_sentiment:           SentimentEnum   = SentimentEnum.neutral
-    cpc_sentiment:            SentimentEnum   = SentimentEnum.neutral
-    targeting_effectiveness:  SentimentEnum   = SentimentEnum.neutral
-    roas_value_mentioned:     Optional[float] = None
-    cpc_value_mentioned:      Optional[float] = None
-    amazon_rep_sentiment:     SentimentEnum   = SentimentEnum.neutral
-    advertiser_sentiment:     SentimentEnum   = SentimentEnum.neutral
+    roasSentiment:                      Optional[SentimentEnum] = None
+    cpcSentiment:                       Optional[SentimentEnum] = None
+    cpmSentiment:                       Optional[SentimentEnum] = None
+    vcpmSentiment:                      Optional[SentimentEnum] = None
+    targetingClausesSentiment:          Optional[SentimentEnum] = None
+    biddingStrategiesSentiment:         Optional[SentimentEnum] = None
+    roasSentimentAdvertiser:            Optional[SentimentEnum] = None
+    cpcSentimentAdvertiser:             Optional[SentimentEnum] = None
+    vcpmSentimentAdvertiser:            Optional[SentimentEnum] = None
+    targetingClausesSentimentAdvertiser: Optional[SentimentEnum] = None
+    advertiserPerception:               Optional[SentimentEnum] = None
 
 
 # ---------------------------------------------------------------------------
-# Full TranscriptInsight — all 10 categories
+# Full TranscriptInsight — all 10 MetricCategory categories
 # ---------------------------------------------------------------------------
 
 class TranscriptInsight(BaseModel):
     """
     Complete structured output for one Gong.io call transcript.
-    Validated against every Claude 3.5 Haiku response (95% extraction accuracy
-    in production per VOA Platform PDF §AI/ML Integration).
+    Field names match the Java MetricCategory enum JSON keys exactly.
+    Achieves 95% extraction accuracy in production (VOA Platform PDF).
 
-    Minimal required set for fast extraction:
-      - call_analysis.primary_topics (category 5)
-      - call_analysis.overall_sentiment
-      - complaint_analysis.severity
-      - performance_metrics_sentiment.roas_sentiment
-
-    All other categories default to safe empty values on partial extraction.
+    The only required field is callAnalysis.primaryTopics — all others
+    default to safe empty values to handle partial LLM responses gracefully.
     """
 
-    # Category 1
-    identification_metrics:       IdentificationMetrics         = Field(default_factory=IdentificationMetrics)
-    # Category 2
-    campaign_structure:           CampaignStructure             = Field(default_factory=CampaignStructure)
-    # Category 3
-    campaign_scale:               CampaignScale                 = Field(default_factory=CampaignScale)
-    # Category 4
-    budget_bidding:               BudgetBidding                 = Field(default_factory=BudgetBidding)
-    # Category 5 — required
-    call_analysis:                CallAnalysis
-    # Category 6
-    seasonal_context:             SeasonalContext               = Field(default_factory=SeasonalContext)
-    # Category 7
-    action_items:                 ActionItems                   = Field(default_factory=ActionItems)
-    # Category 8
-    complaint_analysis:           ComplaintAnalysis             = Field(default_factory=ComplaintAnalysis)
-    # Category 9
-    feature_adaptability:         FeatureAdaptability           = Field(default_factory=FeatureAdaptability)
-    # Category 10
-    performance_metrics_sentiment: PerformanceMetricsSentiment  = Field(default_factory=PerformanceMetricsSentiment)
+    identificationMetrics:      IdentificationMetrics      = Field(default_factory=IdentificationMetrics)
+    campaignStructure:          CampaignStructure           = Field(default_factory=CampaignStructure)
+    campaignScale:              CampaignScale               = Field(default_factory=CampaignScale)
+    budgetAndBidding:           BudgetAndBidding            = Field(default_factory=BudgetAndBidding)
+    callAnalysis:               CallAnalysis                # REQUIRED
+    seasonalContext:            SeasonalContext             = Field(default_factory=SeasonalContext)
+    actionItems:                ActionItems                 = Field(default_factory=ActionItems)
+    complaintAnalysis:          ComplaintAnalysis           = Field(default_factory=ComplaintAnalysis)
+    featureAdaptability:        FeatureAdaptability         = Field(default_factory=FeatureAdaptability)
+    performanceMetricsSentiment: PerformanceMetricsSentiment = Field(default_factory=PerformanceMetricsSentiment)
 
-    # Convenience aliases used by existing code
+    # Convenience aliases used by existing code and dashboard
     @property
     def key_topics(self) -> List[str]:
-        return self.call_analysis.primary_topics
+        return self.callAnalysis.primaryTopics
 
     @property
-    def sentiment(self) -> SentimentEnum:
-        return self.call_analysis.overall_sentiment
+    def sentiment(self) -> Optional[SentimentEnum]:
+        return self.callAnalysis.overallSentiment
 
     @property
-    def urgency(self) -> UrgencyEnum:
-        return self.call_analysis.urgency
+    def urgency(self) -> Optional[UrgencyEnum]:
+        return self.callAnalysis.urgencyLevel
 
     @property
     def pricing_mentioned(self) -> bool:
-        return self.budget_bidding.cpc_concern or self.complaint_analysis.pricing_complaint
+        return (
+            self.budgetAndBidding.budgetUtilization is not None
+            or bool(self.complaintAnalysis.complaintKeywords)
+        )
 
     @property
     def competitor_mentioned(self) -> bool:
-        return self.complaint_analysis.competitor_mentioned
+        return self.complaintAnalysis.programMentioned is not None
 
 
 class BatchInsightSummary(BaseModel):
     """Aggregated summary across all calls in a daily batch."""
-    total_calls:              int
-    processed_calls:          int
-    failed_calls:             int
-    data_quality_rate:        float   = Field(..., ge=0.0, le=1.0)
-    positive_sentiment_pct:   float
-    high_urgency_pct:         float
-    top_topics:               List[str]
-    top_complaints:           List[str]
-    avg_processing_seconds:   float
-    p95_latency_seconds:      float
-    negative_sentiment_pct:   float   = 0.0   # used by CloudWatch alarm (Story 3)
+    total_calls:             int
+    processed_calls:         int
+    failed_calls:            int
+    data_quality_rate:       float = Field(..., ge=0.0, le=1.0)
+    positive_sentiment_pct:  float
+    high_urgency_pct:        float
+    top_topics:              List[str]
+    top_complaints:          List[str]
+    avg_processing_seconds:  float
+    p95_latency_seconds:     float
+    negative_sentiment_pct:  float = 0.0
 
 
 # ---------------------------------------------------------------------------
-# Response parsing
+# Response parsing — mirrors VOCBatchProcessingJob.parseLLMResponse()
 # ---------------------------------------------------------------------------
 
-_JSON_RE = re.compile(r"\{.*?\}", re.DOTALL)
+_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
 def _coerce_call_analysis(data: dict) -> dict:
     """
-    Build a CallAnalysis-compatible dict from a raw LLM response that may
-    use the old flat schema (key_topics, sentiment, urgency) or the new
-    nested schema.
+    Build a callAnalysis-compatible dict from a raw LLM response.
+    Handles flat schema (old format) and nested schema (new format).
     """
-    if "call_analysis" in data:
+    if "callAnalysis" in data:
         return data
 
-    # Flat schema compatibility (old format / mock responses)
-    ca = {
-        "overall_sentiment": data.get("sentiment", "neutral"),
-        "urgency":           data.get("urgency", "low"),
-        "primary_topics":    data.get("key_topics", data.get("primary_topics", ["general"])),
-        "call_resolution":   data.get("call_resolution", False),
-        "follow_up_required": data.get("follow_up_required", False),
+    # Flat compatibility (old format: key_topics, sentiment, urgency at top level)
+    ca: Dict[str, Any] = {
+        "overallSentiment":  data.get("sentiment", "neutral"),
+        "urgencyLevel":      data.get("urgency", "low"),
+        "primaryTopics":     data.get("key_topics", data.get("primary_topics", ["general"])),
+        "secondaryTopics":   [],
+        "resolutionType":    None,
+        "currentIssue":      None,
+        "pastIssue":         None,
+        "resolutionSummary": None,
     }
     out = dict(data)
-    out["call_analysis"] = ca
+    out["callAnalysis"] = ca
     return out
 
 
@@ -295,23 +478,24 @@ def parse_llm_response(raw: str) -> Optional[TranscriptInsight]:
     """
     Extract and validate JSON from a raw LLM response against TranscriptInsight.
     Mirrors VOCBatchProcessingJob.parseLLMResponse() and BedRockUtils.JSON_PATTERN.
-    Returns None if parsing or validation fails (caller triggers retry).
+    Returns None if parsing or validation fails (caller triggers ADDITIONAL_PROMPT_FOR_RETRY).
     """
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```(?:json)?\n?", "", cleaned).rstrip("`").strip()
 
-    for attempt in [cleaned, None]:
+    candidates = [cleaned]
+    match = _JSON_RE.search(cleaned)
+    if match:
+        candidates.append(match.group())
+
+    for candidate in candidates:
         try:
-            text = attempt or (_JSON_RE.search(cleaned) or type('', (), {'group': lambda s: ''})()).group()
-            if not text:
-                break
-            data = json.loads(text if attempt else _JSON_RE.search(cleaned).group())
-            data = _coerce_call_analysis(data)
+            data    = json.loads(candidate)
+            data    = _coerce_call_analysis(data)
             return TranscriptInsight(**data)
         except Exception:
-            if attempt is None:
-                break
+            continue
 
     return None
 
@@ -319,7 +503,7 @@ def parse_llm_response(raw: str) -> Optional[TranscriptInsight]:
 def build_retry_prompt(original_prompt: str, previous_response: str, invalid_reason: str) -> str:
     """
     Mirror of BedRockUtils.ADDITIONAL_PROMPT_FOR_RETRY — injects previous
-    invalid response and validation reason for self-healing retry.
+    invalid response and validation reason so Claude 3.5 Haiku self-corrects.
     """
     return (
         f"Your previous response <previous_response>{previous_response}</previous_response> "
@@ -327,4 +511,22 @@ def build_retry_prompt(original_prompt: str, previous_response: str, invalid_rea
         "Please re-evaluate carefully and provide an updated response that fully aligns "
         "with the given instructions and requirements. "
         + original_prompt
+    )
+
+
+def build_full_extraction_prompt(transcript_text: str) -> str:
+    """
+    Build the combined extraction prompt for all 10 MetricCategory categories.
+    This is the actual prompt structure used by VOAJob in production.
+    """
+    category_instructions = "\n\n".join(
+        f"--- {cat.json_key} ---\n{cat.instructions}\nOutput schema: {cat.schema}"
+        for cat in MetricCategory
+    )
+    return (
+        "You are analyzing an Amazon Ads advertiser call transcript. "
+        "Extract all 10 insight categories. "
+        "Output a single valid JSON object with all 10 keys at the top level.\n\n"
+        + category_instructions
+        + f"\n\nConversation:\n{transcript_text[:4000]}"
     )

@@ -421,3 +421,168 @@ def run_pipeline_simulated(
         "aqe_enabled":       aqe_enabled,
         "skew_join_enabled": aqe_enabled,
     }
+
+
+# ---------------------------------------------------------------------------
+# GongToS3Ingestor — S3 partitioned by marketplace / date
+# Mirrors: GongToS3Ingestor.java from conversation context
+# ---------------------------------------------------------------------------
+
+def gong_to_s3_ingestor(
+    conversations: list[dict],
+    bucket: str = "voc-raw",
+    dry_run: bool = True,
+) -> list[dict]:
+    """
+    Python equivalent of GongToS3Ingestor.java:
+        String key = String.format("raw/%s/date=%s/%s.json", mkt, LocalDate.now(), id);
+        s3.putObject(r->r.bucket("voc-raw").key(key), RequestBody.fromString(convo.toString()));
+
+    Partitions raw Gong.io transcripts in S3 by marketplace + date.
+    Dry-run mode returns manifest of would-be S3 keys without uploading.
+    """
+    from datetime import date
+
+    manifest = []
+    today = date.today().isoformat()
+
+    for convo in conversations:
+        participants = convo.get("participants", [])
+        marketplace = (
+            convo.get("marketplace_id")
+            or (participants[0].get("role", "US") if participants else "US")
+        )
+        conv_id = convo.get("conversation_id", "unknown")
+        s3_key  = f"raw/{marketplace}/date={today}/{conv_id}.json"
+
+        if dry_run:
+            manifest.append({"bucket": bucket, "key": s3_key, "size_bytes": len(json.dumps(convo))})
+        else:
+            try:
+                import boto3
+                s3 = boto3.client("s3")
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=s3_key,
+                    Body=json.dumps(convo).encode("utf-8"),
+                    ContentType="application/json",
+                )
+                manifest.append({"bucket": bucket, "key": s3_key, "uploaded": True})
+            except Exception as exc:
+                logger.error("S3 upload failed for %s: %s", conv_id, exc)
+                manifest.append({"bucket": bucket, "key": s3_key, "uploaded": False, "error": str(exc)})
+
+    return manifest
+
+
+# ---------------------------------------------------------------------------
+# RollupJob — per-entity daily aggregation
+# Mirrors: RollupJob.java from conversation context
+# Aggregates: avg_sentiment per entity_id, union of all concerns/complaints
+# ---------------------------------------------------------------------------
+
+def rollup_job(feature_records: list[dict]) -> list[dict]:
+    """
+    Python equivalent of RollupJob.java:
+        DatasetInput.read(ctx, "GONG_VOC_FEATURES")
+            .groupBy(f->f.get("ids").get("entity_id").asText())
+            .map(this::aggregate)
+
+    Groups processed feature records by entity_id (advertiser), then:
+      - Averages sentiment scores across all daily calls
+      - Unions all complaint keywords and concerns into a deduplicated set
+      - Collects ROAS sentiment distribution
+      - Generates ROAS improvement suggestions (LLM-driven in production)
+
+    Output feeds: DynamoDB (real-time dashboard) and Athena (historical queries).
+    """
+    from collections import defaultdict
+
+    groups: dict[str, list[dict]] = defaultdict(list)
+
+    for record in feature_records:
+        # Support both old and new field name conventions
+        entity_id = (
+            record.get("entity_id")
+            or record.get("advertiser_id")
+            or record.get("metadata", {}).get("conversation_id", "unknown")[:10]
+        )
+        groups[entity_id].append(record)
+
+    rollups = []
+    for entity_id, records in groups.items():
+        # Average sentiment score across all calls
+        sentiment_scores = [
+            r.get("nlp_features", {}).get("sentiment_score", 0.0)
+            for r in records
+        ]
+        avg_sentiment = sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
+
+        # Union of complaint keywords (deduplicated)
+        all_concerns: set[str] = set()
+        for r in records:
+            nlp = r.get("nlp_features", {})
+            aa  = nlp.get("advanced_analysis", {})
+            # New nested schema
+            ca  = aa.get("call_analysis", {})
+            all_concerns.update(ca.get("primary_topics", []))
+            comp = aa.get("complaint_analysis", {})
+            all_concerns.update(comp.get("complaint_keywords", []))
+            # Old flat schema fallback
+            all_concerns.update(aa.get("key_topics", []))
+
+        # Sentiment distribution across calls
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        for r in records:
+            s = r.get("nlp_features", {}).get("sentiment_label", "neutral")
+            if s in sentiment_counts:
+                sentiment_counts[s] += 1
+
+        rollups.append({
+            "entity_id":           entity_id,
+            "call_count":          len(records),
+            "avg_sentiment_score": round(avg_sentiment, 4),
+            "sentiment_label":     (
+                "positive" if avg_sentiment > 0.1
+                else "negative" if avg_sentiment < -0.1
+                else "neutral"
+            ),
+            "concerns":            sorted(all_concerns),
+            "sentiment_counts":    sentiment_counts,
+            "negative_rate":       sentiment_counts["negative"] / len(records),
+            "roas_improvement_suggestions": _generate_roas_suggestions(
+                avg_sentiment, all_concerns, len(records)
+            ),
+            "rollup_date":         time.strftime("%Y-%m-%d"),
+        })
+
+    return rollups
+
+
+def _generate_roas_suggestions(
+    avg_sentiment: float,
+    concerns: set,
+    call_count: int,
+) -> list[str]:
+    """
+    Rule-based ROAS improvement suggestions.
+    In production, this calls Bedrock for LLM-generated personalized recommendations
+    (PDF §AI-Powered Analytics Layer, RAG pipeline).
+    """
+    suggestions = []
+    concern_text = " ".join(concerns).lower()
+
+    if "budget" in concern_text or "budget_management" in concern_text:
+        suggestions.append("Enable dynamic budget allocation to prevent early exhaustion")
+    if "roas" in concern_text or "roas_optimization" in concern_text:
+        suggestions.append("Switch to target ROAS bidding strategy to optimize returns")
+    if "targeting" in concern_text:
+        suggestions.append("Expand audience targeting with lookalike segments to increase reach")
+    if "cpc" in concern_text:
+        suggestions.append("Implement bid modifiers by device and time-of-day to reduce CPC")
+    if avg_sentiment < -0.1:
+        suggestions.append("Schedule proactive outreach call — negative sentiment detected")
+    if call_count >= 3:
+        suggestions.append("Review 30-day campaign trend with advertiser to identify pattern")
+
+    return suggestions or ["Campaign performing within normal parameters — continue monitoring"]

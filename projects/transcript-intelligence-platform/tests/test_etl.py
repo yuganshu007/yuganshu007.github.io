@@ -1,4 +1,4 @@
-"""Tests for Bullet 1: EMR/Spark ETL pipeline — GongDataIngestionJob + VOAJob."""
+"""Tests for Bullet 1: EMR/Spark ETL pipeline — GongToS3Ingestor + GongDataIngestionJob + VOAJob + RollupJob."""
 
 import pytest
 import sys
@@ -12,7 +12,9 @@ from transcript_intelligence.etl.spark_pipeline import (
     extract_metadata_features,
     extract_nlp_features_local,
     gong_data_ingestion_job,
+    gong_to_s3_ingestor,
     process_conversation,
+    rollup_job,
     run_pipeline_simulated,
 )
 
@@ -164,6 +166,100 @@ class TestProcessConversation:
     def test_does_not_raise_on_empty_transcript(self):
         result = process_conversation({})
         assert result is not None or result is None  # no exception
+
+
+class TestGongToS3Ingestor:
+    """Tests for S3 partitioned ingestion (GongToS3Ingestor.java pattern)."""
+
+    def test_returns_manifest_entry_per_conversation(self):
+        result = gong_to_s3_ingestor([SAMPLE_TRANSCRIPT], dry_run=True)
+        assert len(result) == 1
+
+    def test_s3_key_includes_conversation_id(self):
+        result = gong_to_s3_ingestor([SAMPLE_TRANSCRIPT], dry_run=True)
+        assert "conv_00001" in result[0]["key"]
+
+    def test_s3_key_partitioned_by_date(self):
+        result = gong_to_s3_ingestor([SAMPLE_TRANSCRIPT], dry_run=True)
+        assert "date=" in result[0]["key"]
+
+    def test_bucket_name_in_manifest(self):
+        result = gong_to_s3_ingestor([SAMPLE_TRANSCRIPT], bucket="test-bucket", dry_run=True)
+        assert result[0]["bucket"] == "test-bucket"
+
+    def test_size_bytes_positive(self):
+        result = gong_to_s3_ingestor([SAMPLE_TRANSCRIPT], dry_run=True)
+        assert result[0]["size_bytes"] > 0
+
+    def test_multiple_conversations_all_ingested(self):
+        batch  = [{"conversation_id": f"conv_{i}", "participants": [], "transcript": "text"} for i in range(5)]
+        result = gong_to_s3_ingestor(batch, dry_run=True)
+        assert len(result) == 5
+
+
+class TestRollupJob:
+    """Tests for per-entity aggregation (RollupJob.java pattern)."""
+
+    def _make_feature_records(self, n: int, entity_id: str = "adv_00001") -> list[dict]:
+        return [
+            {
+                "advertiser_id": entity_id,
+                "nlp_features": {
+                    "sentiment_score": 0.5,
+                    "sentiment_label": "positive",
+                    "advanced_analysis": {
+                        "call_analysis": {
+                            "primary_topics": ["roas_optimization"],
+                        },
+                        "complaint_analysis": {
+                            "complaint_keywords": ["high_cpc"],
+                        },
+                    },
+                },
+            }
+            for _ in range(n)
+        ]
+
+    def test_groups_by_entity_id(self):
+        records = (
+            self._make_feature_records(3, "adv_001")
+            + self._make_feature_records(2, "adv_002")
+        )
+        result = rollup_job(records)
+        entity_ids = {r["entity_id"] for r in result}
+        assert "adv_001" in entity_ids
+        assert "adv_002" in entity_ids
+
+    def test_call_count_correct(self):
+        records = self._make_feature_records(5, "adv_001")
+        result  = rollup_job(records)
+        assert result[0]["call_count"] == 5
+
+    def test_avg_sentiment_score(self):
+        records = self._make_feature_records(4, "adv_001")
+        result  = rollup_job(records)
+        assert abs(result[0]["avg_sentiment_score"] - 0.5) < 0.001
+
+    def test_concerns_deduplicated(self):
+        records = self._make_feature_records(3, "adv_001")
+        result  = rollup_job(records)
+        concerns = result[0]["concerns"]
+        assert len(concerns) == len(set(concerns)), "Concerns should be deduplicated"
+
+    def test_roas_suggestions_generated(self):
+        records = self._make_feature_records(2, "adv_001")
+        result  = rollup_job(records)
+        assert isinstance(result[0]["roas_improvement_suggestions"], list)
+        assert len(result[0]["roas_improvement_suggestions"]) > 0
+
+    def test_negative_rate_calculated(self):
+        records = self._make_feature_records(10, "adv_001")
+        result  = rollup_job(records)
+        assert 0.0 <= result[0]["negative_rate"] <= 1.0
+
+    def test_rollup_date_in_output(self):
+        result = rollup_job(self._make_feature_records(1))
+        assert "rollup_date" in result[0]
 
 
 class TestPipelineSimulated:

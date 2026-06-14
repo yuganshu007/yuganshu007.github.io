@@ -60,72 +60,90 @@ def _make_insight_categories(rng: random.Random, text: str, campaign_type: str) 
     ]
     primary_topics = rng.sample(topics_pool, k=rng.randint(1, 3))
 
+    # Use EXACT MetricCategory camelCase JSON keys
     return {
-        "identification_metrics": {
-            "amazon_rep_name":  f"Rep_{rng.randint(1,50):02d}",
-            "asin_mentions":    [f"B{rng.randint(0,9)}{rng.randint(100000,999999)}" for _ in range(rng.randint(0,2))],
-            "campaign_names":   [f"Campaign_{rng.randint(1,20)}"],
-            "marketplace_id":   "US",
+        "identificationMetrics": {
+            "amazonRepName":     f"Rep_{rng.randint(1,50):02d}",
+            "asinMentioned":     [f"B{rng.randint(0,9)}{rng.randint(100000,999999)}" for _ in range(rng.randint(0,2))],
+            "campaignNames":     [f"Campaign_{rng.randint(1,20)}"],
+            "tenureInformation": rng.choice([None, "6 months", "1 year", "2 years"]),
         },
-        "campaign_structure": {
-            "primary_campaign_type": campaign_type,
-            "targeting_methods":     rng.sample(["keyword", "product", "audience"], k=rng.randint(1,2)),
-            "campaign_count":        rng.randint(1, 12),
+        "campaignStructure": {
+            "primaryCampaignType": campaign_type.replace(" ", "_"),
+            "targetingTypes":      rng.sample(["Keyword", "Product", "Audience", "Views Retargeting"], k=rng.randint(1,3)),
         },
-        "campaign_scale": {
-            "scale_issues_identified": rng.random() > 0.7,
-            "targeting_limitations":   ["budget_cap"] if rng.random() > 0.7 else [],
-            "reach_concerns":          rng.random() > 0.75,
+        "campaignScale": {
+            "scaleIssuesReported":          rng.random() > 0.7,
+            "limitedTargetingMentioned":    rng.random() > 0.6,
+            "scalePerception":              rng.choice(["good", "limited", "very_limited", None]),
+            "targetingRestrictions":        ["budget_cap"] if rng.random() > 0.7 else [],
+            "recommendedScaleImprovements": ["expand_audience"] if rng.random() > 0.6 else [],
         },
-        "budget_bidding": {
-            "bidding_strategy_discussed":  rng.random() > 0.4,
-            "budget_utilization_concern":  rng.random() > 0.5,
-            "seasonal_adjustment_needed":  rng.random() > 0.7,
-            "auto_bidding_requested":      rng.random() > 0.5,
-            "cpc_concern":                 rng.random() > 0.4,
-            "budget_exhaustion":           rng.random() > 0.6,
+        "budgetAndBidding": {
+            "dailyBudget":       rng.choice([None, 500.0, 1000.0, 2000.0, 5000.0]),
+            "monthlyBudget":     rng.choice([None, 15000.0, 30000.0, 60000.0]),
+            "budgetUtilization": rng.choice(["budget_limited", "under_spending", "optimal", None]),
+            "biddingStrategy":   rng.choice(["aggressive", "conservative", "competitive", None]),
+            "seasonalStrategy":  rng.choice(["peak_season", "off_season", None]),
+            "bidAdjustments":    ["increase_bids_20pct"] if rng.random() > 0.6 else [],
         },
-        "call_analysis": {
-            "overall_sentiment":  overall_sent,
-            "urgency":            rng.choices(["low", "medium", "high"], weights=[0.5, 0.35, 0.15])[0],
-            "primary_topics":     primary_topics,
-            "secondary_topics":   rng.sample(topics_pool, k=rng.randint(0, 2)),
-            "call_resolution":    rng.random() > 0.3,
-            "follow_up_required": rng.random() > 0.4,
+        "callAnalysis": {
+            "primaryTopics":        primary_topics,
+            "primaryTopicSentiment": overall_sent,
+            "secondaryTopics":      rng.sample(topics_pool, k=rng.randint(0, 2)),
+            "resolutionType":       rng.choice(["full_resolution", "partial_resolution", "escalated", None]),
+            "overallSentiment":     overall_sent,
+            "customerExperience":   rng.choice(["beginner", "intermediate", "experienced", "expert"]),
+            "urgencyLevel":         rng.choices(["low", "medium", "high", "seasonal_pressure"], weights=[0.5, 0.35, 0.1, 0.05])[0],
+            "currentIssue":         "below_target_roas" if rng.random() > 0.5 else None,
+            "pastIssue":            "high_cpc" if rng.random() > 0.7 else None,
+            "pastIssueStatus":      rng.choice(["resolved", "not_resolved", None]),
+            "resolutionSummary":    "Discussed optimization strategies" if rng.random() > 0.4 else None,
         },
-        "seasonal_context": {
-            "peak_season_discussed": rng.random() > 0.8,
-            "seasonal_pressure":     rng.random() > 0.75,
-            "q4_mentioned":          rng.random() > 0.85,
+        "seasonalContext": {
+            "seasonalPressure": rng.random() > 0.8,
+            "peakSeasonTiming": rng.choice([None, "Q4", "Prime Day", "Back to School"]),
+            "seasonalEvents":   ["Black Friday"] if rng.random() > 0.85 else [],
         },
-        "action_items": {
-            "immediate_actions":   ["review_bids", "check_targeting"][:rng.randint(0,2)],
-            "optimization_recs":   ["enable_auto_bidding", "expand_audience"][:rng.randint(0,2)],
-            "commitments_made":    ["follow_up_in_1_week"] if rng.random() > 0.5 else [],
-            "follow_up_date_mentioned": rng.random() > 0.4,
+        "actionItems": {
+            "immediateActions":        ["review_bids", "check_targeting"][:rng.randint(0,2)],
+            "bidOptimizations":        ["enable_auto_bidding", "increase_bids"][:rng.randint(0,2)],
+            "nextSteps":               ["follow_up_in_1_week"] if rng.random() > 0.5 else [],
+            "scaleImprovementActions": ["expand_audience_segments"] if rng.random() > 0.6 else [],
         },
-        "complaint_analysis": {
-            "complaint_keywords":   ["below_target_roas", "high_cpc"][:rng.randint(0,2)],
-            "severity":             rng.choices(["low","medium","high","critical"], weights=[0.5,0.3,0.15,0.05])[0],
-            "competitor_mentioned": comp,
-            "competitor_names":     (["Google Ads"] if comp else []),
-            "pricing_complaint":    rng.random() > 0.5,
-            "feature_gap_complaint": rng.random() > 0.6,
+        "complaintAnalysis": {
+            "complaintKeywords":  ["below_target_roas", "high_cpc"][:rng.randint(0,2)],
+            "complaintPhrases":   ["ads shown too often"] if rng.random() > 0.8 else [],
+            "programMentioned":   "Google Ads" if comp else None,
+            "complaintSeverity":  rng.choices(["low", "medium", "high"], weights=[0.5, 0.35, 0.15])[0],
+            "scaleRelatedComplaints": ["limited_reach"] if rng.random() > 0.7 else [],
+            "programSpecificComplaints": {
+                "SD": ["irrelevant_placement"] if campaign_type == "Sponsored Display" and rng.random() > 0.7 else [],
+                "SP": ["high_acos"] if campaign_type == "Sponsored Products" and rng.random() > 0.7 else [],
+                "SB": [] ,
+            },
         },
-        "feature_adaptability": {
-            "knowledge_gaps_identified": ["auto_bidding_setup"] if rng.random() > 0.6 else [],
-            "feature_requests":          ["automated_reporting"] if rng.random() > 0.5 else [],
-            "learning_opportunity":      rng.random() > 0.5,
-            "onboarding_issue":          rng.random() > 0.75,
+        "featureAdaptability": {
+            "knownFeatures":               ["auto_bidding"] if rng.random() > 0.5 else [],
+            "discussedFeatures":           ["target_roas", "portfolio_bidding"][:rng.randint(0,2)],
+            "learnedFeatures":             ["automated_rules"] if rng.random() > 0.7 else [],
+            "featureAdaptability":         rng.choice(["beginner", "intermediate", "advanced", None]),
+            "featuresAdvertisersKnows":    [],
+            "featuresAdvertiserTalksAbout": ["roas"],
+            "featuresAdvertiserLearnt":    [],
         },
-        "performance_metrics_sentiment": {
-            "roas_sentiment":          rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
-            "cpc_sentiment":           rng.choices(sentiments, weights=[0.3, 0.35, 0.35])[0],
-            "targeting_effectiveness": rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
-            "roas_value_mentioned":    roas_val,
-            "cpc_value_mentioned":     cpc_val,
-            "amazon_rep_sentiment":    "positive",
-            "advertiser_sentiment":    overall_sent,
+        "performanceMetricsSentiment": {
+            "roasSentiment":                     rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
+            "cpcSentiment":                      rng.choices(sentiments, weights=[0.3, 0.35, 0.35])[0],
+            "cpmSentiment":                      rng.choice(sentiments + [None]),
+            "vcpmSentiment":                     rng.choice(sentiments + [None]) if campaign_type == "Sponsored Display" else None,
+            "targetingClausesSentiment":         rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
+            "biddingStrategiesSentiment":        rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
+            "roasSentimentAdvertiser":           rng.choices(sentiments, weights=[0.35, 0.30, 0.35])[0],
+            "cpcSentimentAdvertiser":            rng.choices(sentiments, weights=[0.30, 0.30, 0.40])[0],
+            "vcpmSentimentAdvertiser":           None,
+            "targetingClausesSentimentAdvertiser": rng.choices(sentiments, weights=[0.4, 0.35, 0.25])[0],
+            "advertiserPerception":              overall_sent,
         },
     }
 

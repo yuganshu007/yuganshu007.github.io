@@ -169,71 +169,99 @@ class BedrockClient:
     def _mock_response(self, prompt: str) -> str:
         """
         Deterministic mock response for tests and local runs without AWS credentials.
-        Returns valid JSON matching the full 10-category TranscriptInsight schema.
+        Returns valid JSON matching the EXACT MetricCategory JSON schemas.
+        Field names use camelCase to match the Java enum JSON keys precisely.
         Mirrors the 95% extraction accuracy of the real production VOAJob.
         """
         text  = prompt.lower()
-        topic = "roas_optimization" if "roas" in text else "budget_management"
+        topic = "Performance Metrics" if "roas" in text else "Budget Optimization"
         comp  = any(kw in text for kw in ("google", "meta", "microsoft"))
 
-        # Full 10-category response matching TranscriptInsight schema
+        # Full 10-category response using EXACT MetricCategory JSON keys (camelCase)
+        overall_sent = (
+            "positive" if any(w in text for w in ("great", "excellent", "success", "happy"))
+            else "negative" if any(w in text for w in ("issue", "problem", "frustrated", "fail"))
+            else "neutral"
+        )
         return json.dumps({
-            # Supports both flat (old) and nested (new) parsing via _coerce_call_analysis
-            "call_analysis": {
-                "overall_sentiment":  "neutral" if not any(w in text for w in ("great","excellent","success")) else "positive",
-                "urgency":            "high"    if any(w in text for w in ("issue","problem","frustrated","fail")) else "medium",
-                "primary_topics":     [topic, "campaign_structure"],
-                "secondary_topics":   ["targeting", "bidding_strategy"],
-                "call_resolution":    False,
-                "follow_up_required": True,
+            "identificationMetrics": {
+                "amazonRepName":     "Amazon Rep",
+                "asinMentioned":     [],
+                "campaignNames":     ["Main Campaign"],
+                "tenureInformation": None,
             },
-            "identification_metrics": {
-                "amazon_rep_name": "Amazon Rep",
-                "asin_mentions":   [],
-                "campaign_names":  [],
+            "campaignStructure": {
+                "primaryCampaignType": "Sponsored_Products",
+                "targetingTypes":      ["Keyword", "Product"],
             },
-            "campaign_structure": {
-                "primary_campaign_type": "Sponsored Products",
-                "targeting_methods":     ["keyword", "product"],
-                "campaign_count":        3,
+            "campaignScale": {
+                "scaleIssuesReported":          "budget" in text,
+                "limitedTargetingMentioned":    False,
+                "scalePerception":              "limited" if "budget" in text else "good",
+                "targetingRestrictions":        [],
+                "recommendedScaleImprovements": [],
             },
-            "campaign_scale": {
-                "scale_issues_identified": False,
-                "targeting_limitations":   [],
+            "budgetAndBidding": {
+                "dailyBudget":       None,
+                "monthlyBudget":     None,
+                "budgetUtilization": "budget_limited" if "budget" in text else None,
+                "biddingStrategy":   None,
+                "seasonalStrategy":  None,
+                "bidAdjustments":    ["enable_auto_bidding"] if "auto" in text or "suggest" in text else [],
             },
-            "budget_bidding": {
-                "bidding_strategy_discussed": True,
-                "budget_utilization_concern": "budget" in text,
-                "auto_bidding_requested":     "auto" in text or "suggest" in text,
-                "cpc_concern":                "cpc" in text,
+            "callAnalysis": {
+                "primaryTopics":        [topic, "Campaign Structure"],
+                "primaryTopicSentiment": overall_sent,
+                "secondaryTopics":      ["Targeting Issues"],
+                "resolutionType":       "partial",
+                "overallSentiment":     overall_sent,
+                "customerExperience":   "intermediate",
+                "urgencyLevel":         "high" if any(w in text for w in ("issue", "problem", "fail")) else "medium",
+                "currentIssue":         "below_target_roas" if "roas" in text else None,
+                "pastIssue":            None,
+                "pastIssueStatus":      None,
+                "resolutionSummary":    "Discussed optimization strategies",
             },
-            "seasonal_context": {
-                "peak_season_discussed": False,
-                "seasonal_pressure":     False,
+            "seasonalContext": {
+                "seasonalPressure": False,
+                "peakSeasonTiming": None,
+                "seasonalEvents":   [],
             },
-            "action_items": {
-                "immediate_actions":  ["review_bids", "check_targeting"],
-                "optimization_recs":  ["enable_auto_bidding"],
-                "commitments_made":   [],
+            "actionItems": {
+                "immediateActions":       ["review_bids", "check_targeting"],
+                "bidOptimizations":       ["enable_auto_bidding"],
+                "nextSteps":              ["follow_up_in_1_week"],
+                "scaleImprovementActions": [],
             },
-            "complaint_analysis": {
-                "complaint_keywords":  ["below_target_roas"] if "roas" in text else [],
-                "severity":            "medium",
-                "competitor_mentioned": comp,
-                "competitor_names":    ["Google Ads"] if comp else [],
-                "pricing_complaint":   "cpc" in text or "cost" in text,
+            "complaintAnalysis": {
+                "complaintKeywords":  ["below_target_roas"] if "roas" in text else [],
+                "complaintPhrases":   [],
+                "programMentioned":   "Google Ads" if comp else None,
+                "complaintSeverity":  "medium",
+                "scaleRelatedComplaints": [],
+                "programSpecificComplaints": {"SD": [], "SP": [], "SB": []},
             },
-            "feature_adaptability": {
-                "knowledge_gaps_identified": [],
-                "feature_requests":          ["automated_bidding"] if "suggest" in text else [],
-                "learning_opportunity":      False,
+            "featureAdaptability": {
+                "knownFeatures":               ["auto_bidding"],
+                "discussedFeatures":           ["target_roas"],
+                "learnedFeatures":             [],
+                "featureAdaptability":         "intermediate",
+                "featuresAdvertisersKnows":    [],
+                "featuresAdvertiserTalksAbout": [],
+                "featuresAdvertiserLearnt":    [],
             },
-            "performance_metrics_sentiment": {
-                "roas_sentiment":          "neutral",
-                "cpc_sentiment":           "negative" if "cpc" in text else "neutral",
-                "targeting_effectiveness": "neutral",
-                "amazon_rep_sentiment":    "positive",
-                "advertiser_sentiment":    "neutral",
+            "performanceMetricsSentiment": {
+                "roasSentiment":                     "negative" if "roas" in text else "neutral",
+                "cpcSentiment":                      "negative" if "cpc" in text else "neutral",
+                "cpmSentiment":                      None,
+                "vcpmSentiment":                     None,
+                "targetingClausesSentiment":         "neutral",
+                "biddingStrategiesSentiment":        "neutral",
+                "roasSentimentAdvertiser":           "negative" if "roas" in text else "neutral",
+                "cpcSentimentAdvertiser":            "negative" if "cpc" in text else "neutral",
+                "vcpmSentimentAdvertiser":           None,
+                "targetingClausesSentimentAdvertiser": "neutral",
+                "advertiserPerception":              overall_sent,
             },
         })
 
