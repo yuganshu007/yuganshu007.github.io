@@ -1,0 +1,60 @@
+name: transcript-intelligence-platform CI
+
+on:
+  push:
+    paths:
+      - "projects/transcript-intelligence-platform/**"
+  pull_request:
+    paths:
+      - "projects/transcript-intelligence-platform/**"
+
+defaults:
+  run:
+    working-directory: projects/transcript-intelligence-platform
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (for Spark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Generate a small synthetic dataset
+        run: python scripts/generate_data.py --out data --conversations 1200 --tenants 12
+
+      - name: Unit tests
+        run: pytest --cov=services --cov=platform_common
+
+      - name: Smoke benchmarks (fast settings)
+        env:
+          BENCH_FAST: "1"
+        run: |
+          python -m services.etl_spark.benchmarks.run_benchmark --data data --rows 60000
+          python -m services.agent_chatbot.loadtest.run_loadtest --requests 200
+          python -m services.observability.data_quality.benchmark_quality --data data
+          python -m services.analytics_dashboard.benchmarks.run_benchmark --data data
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: projects/transcript-intelligence-platform/docs/results/*.json

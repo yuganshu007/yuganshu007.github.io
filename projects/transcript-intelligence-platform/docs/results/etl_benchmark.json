@@ -1,0 +1,18 @@
+{
+  "rows": 2000000,
+  "strategy": "salt",
+  "repeat": 3,
+  "baseline_seconds_median": 2.418,
+  "optimized_seconds_median": 1.68,
+  "baseline_rows_per_sec": 827241.1,
+  "optimized_rows_per_sec": 1190405.5,
+  "throughput_improvement_pct": 41.1,
+  "throughput_improvement_per_iter_pct": [
+    31.7,
+    41.1,
+    43.9
+  ],
+  "throughput_improvement_min_pct": 31.7,
+  "throughput_improvement_max_pct": 43.9,
+  "note": "Real measurement on this machine. Both paths use the SAME shuffle-partition count; the gain comes purely from skew handling: AQE skew-join + adaptive coalescing + a salted hot key vs an un-tuned shuffle sort-merge join on a skewed key. Absolute numbers vary by hardware; the delta is caused by genuine architectural differences."
+}

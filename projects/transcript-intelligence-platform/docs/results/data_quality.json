@@ -1,0 +1,15 @@
+{
+  "total_conversations": 23000,
+  "passed": 22984,
+  "failed": 16,
+  "pass_rate": 0.999304,
+  "pass_rate_pct": 99.9304,
+  "meets_999_target": true,
+  "violations": {
+    "unsupported_language": 6,
+    "invalid_duration": 3,
+    "empty_transcript": 3,
+    "no_turns": 4
+  },
+  "note": "Measured pass rate of the DQ rule suite over the full corpus."
+}
