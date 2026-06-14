@@ -15,7 +15,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
-from platform_common.config import settings
 from platform_common.logging import get_logger
 from services.agent_chatbot.app.bedrock_client import BedrockClient, LLMResponse
 from services.agent_chatbot.app.validation import (

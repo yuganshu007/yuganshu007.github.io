@@ -3,9 +3,9 @@
   "repeat": 3,
   "detail_rows": 6000000,
   "gold_rows": 700,
-  "detail_full_scan_seconds": 0.0616,
-  "gold_table_seconds": 0.005,
-  "time_to_insight_speedup_x": 12.4,
+  "detail_full_scan_seconds": 0.0597,
+  "gold_table_seconds": 0.0043,
+  "time_to_insight_speedup_x": 13.9,
   "degradation": {
     "automated_detection_lag_days": 1,
     "manual_detection_lag_days_expected": 5.5,

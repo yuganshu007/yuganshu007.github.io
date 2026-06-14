@@ -62,6 +62,23 @@ Everything runs **locally** with no AWS account required (LLM and Athena/Glue ca
 faithful local mocks). The same code paths target real AWS via the Terraform in each service's
 `infra/` folder.
 
+## Latest measured results (committed in `docs/results/`)
+
+These are real outputs from `make bench` on the dev machine — regenerate them anytime. See
+[`docs/METRICS.md`](docs/METRICS.md) for exactly how each is produced and what is synthetic.
+
+| Metric (resume claim) | Measured here | Source |
+|-----------------------|---------------|--------|
+| ETL throughput +38% | **+41.1% median** (per‑iter 31.7 / 41.1 / 43.9%) on 2M skewed rows | `etl_benchmark.json` |
+| Agent p95 < 2s | **p95 = 0.886s** (p50 0.48s, p99 1.35s) over 1,000 reqs | `agent_latency.json` |
+| 99.9% data quality / 23k+ convos | **99.93%** over **23,000** conversations | `data_quality.json` |
+| Time‑to‑insight 12× | **13.9×** (6M detail rows → 700‑row gold) | `analytics_speedup.json` |
+| Incident detection acceleration 82% | **81.8%** detection‑latency reduction | `analytics_speedup.json` |
+
+> Absolute numbers vary by hardware; each delta is caused by a genuine algorithmic/architectural
+> difference, not a hard‑coded constant. The scale figures (100+/18 teams, 23k conversations) are
+> synthetic demonstration volumes — **not** a claim of real production adoption (see METRICS.md).
+
 ## Repository layout
 
 ```

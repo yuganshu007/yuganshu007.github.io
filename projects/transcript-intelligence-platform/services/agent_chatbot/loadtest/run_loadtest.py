@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path

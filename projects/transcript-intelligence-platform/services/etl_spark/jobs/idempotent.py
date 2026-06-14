@@ -15,7 +15,6 @@ import json
 import os
 
 from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
 
 
 def deduplicate(df: DataFrame, business_key: str = "call_id") -> DataFrame:

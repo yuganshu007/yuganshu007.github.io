@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 import random
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 from datetime import date, timedelta
 from typing import Iterator
 

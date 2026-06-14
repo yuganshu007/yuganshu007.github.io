@@ -84,10 +84,10 @@ def main() -> int:
         "throughput_improvement_min_pct": round(min(per_iter_improvement), 1),
         "throughput_improvement_max_pct": round(max(per_iter_improvement), 1),
         "note": (
-            "Real measurement on this machine. Improvement comes from AQE + skew-join + tuned "
-            "shuffle partitions + broadcast join vs an un-tuned shuffle sort-merge join on a "
-            "skewed key. Absolute numbers vary by hardware; the delta is caused by genuine "
-            "architectural differences."
+            "Real measurement on this machine. Both paths use the SAME shuffle-partition count; "
+            "the gain comes purely from skew handling: AQE skew-join + adaptive coalescing + a "
+            "salted hot key vs an un-tuned shuffle sort-merge join on a skewed key. Absolute "
+            "numbers vary by hardware; the delta is caused by genuine architectural differences."
         ),
     }
     os.makedirs(RESULTS.parent, exist_ok=True)
