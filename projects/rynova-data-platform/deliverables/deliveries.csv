@@ -1,0 +1,23 @@
+id,title,planned_date,delivered_date,on_time,bullet
+RY-DEL-001,Async REST API for dataset catalog,2023-01-20,2023-01-19,true,1
+RY-DEL-002,Java QueryService backend,2023-02-17,2023-02-17,true,1
+RY-DEL-003,Linux read-path tuning rollout,2023-03-24,2023-03-23,true,1
+RY-DEL-004,Covering index for dataset listing,2023-04-14,2023-04-13,true,1
+RY-DEL-005,ETL schema-evolution runtime,2023-05-12,2023-05-12,true,2
+RY-DEL-006,DQ validation SDK v1.0,2023-06-09,2023-06-08,true,2
+RY-DEL-007,Pipeline retries + structured reviews,2023-07-07,2023-07-06,true,2
+RY-DEL-008,DQ SDK v1.1 (regex + unique),2023-07-28,2023-07-28,true,2
+RY-DEL-009,Kafka MCE consumer idempotent sink,2023-08-25,2023-08-24,true,3
+RY-DEL-010,Per-key partition routing,2023-09-15,2023-09-15,true,3
+RY-DEL-011,Manual-commit rollout,2023-10-13,2023-10-12,true,3
+RY-DEL-012,CI/CD pipelines for streaming jobs,2023-11-03,2023-11-02,true,3
+RY-DEL-013,Production health dashboard,2023-11-24,2023-11-24,true,3
+RY-DEL-014,DQ registry audit (33 fixed),2023-12-15,2023-12-14,true,3
+RY-DEL-015,Date-shard partitioning,2024-01-19,2024-01-19,true,4
+RY-DEL-016,Keyset pagination for list endpoints,2024-02-16,2024-02-15,true,4
+RY-DEL-017,Composite indexes for hot queries,2024-03-15,2024-03-14,true,4
+RY-DEL-018,Query plan benchmark suite,2024-04-12,2024-04-12,true,4
+RY-DEL-019,Pagination cutover in production,2024-05-10,2024-05-09,true,4
+RY-DEL-020,SQL latency 25% milestone,2024-06-07,2024-06-06,true,4
+RY-DEL-021,SDK v1.2 (range + in_set bounds fix),2024-07-05,2024-07-05,true,2
+RY-DEL-022,On-call runbook + dashboard tuning,2024-08-02,2024-08-01,true,3

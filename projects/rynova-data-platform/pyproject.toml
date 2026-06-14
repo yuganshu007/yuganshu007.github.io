@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rynova-platform"
+version = "1.0.0"
+description = "Rynova Data Platform compliance project: async REST APIs, ETL/ELT with schema evolution, Kafka streaming with idempotency, SQL query-plan optimization."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Yuganshu Jain" }]
+dependencies = [
+    "fastapi>=0.110,<1.0",
+    "uvicorn[standard]>=0.27,<1.0",
+    "httpx>=0.27,<1.0",
+    "pydantic>=2.6,<3.0",
+    "anyio>=4.2,<5.0",
+    "prometheus-client>=0.20,<1.0",
+    "pyyaml>=6.0,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "pytest-cov>=4.1,<6.0",
+    "ruff>=0.4,<1.0",
+    "mypy>=1.8,<2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+markers = ["benchmark: marks benchmark tests (run with `make bench`)"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["data", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
