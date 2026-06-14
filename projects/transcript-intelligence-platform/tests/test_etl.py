@@ -1,4 +1,4 @@
-"""Tests for Bullet 1: EMR/Spark ETL pipeline."""
+"""Tests for Bullet 1: EMR/Spark ETL pipeline — GongDataIngestionJob + VOAJob."""
 
 import pytest
 import sys
@@ -11,6 +11,7 @@ from transcript_intelligence.etl.spark_pipeline import (
     extract_business_features,
     extract_metadata_features,
     extract_nlp_features_local,
+    gong_data_ingestion_job,
     process_conversation,
     run_pipeline_simulated,
 )
@@ -20,11 +21,25 @@ SAMPLE_TRANSCRIPT = {
     "conversation_id": "conv_00001",
     "duration_seconds": 1920,
     "participants": [{"role": "customer"}, {"role": "amazon_rep"}],
+    "transcript_segments": [
+        {"speaker": "customer", "text": "We're struggling with our ROAS.", "confidence": 0.94},
+    ],
     "transcript": (
         "We're struggling with our ROAS. The cost per click is too high. "
         "I wish we could automate the bidding. Google Ads seems to be outperforming."
     ),
 }
+
+SAMPLE_METADATA = [
+    {
+        "conversation_id": "conv_00001",
+        "account_name":    "Acme Corp",
+        "opportunity_stage": "qualified",
+        "marketplace_id":  "US",
+        "advertiser_tier": "premium",
+        "salesforce_id":   "SF_123456",
+    }
+]
 
 
 class TestFeatureExtraction:
@@ -58,21 +73,80 @@ class TestFeatureExtraction:
         assert "sentiment_label" in nlp
         assert nlp["sentiment_label"] in ("positive", "neutral", "negative")
 
-    def test_nlp_returns_topics(self):
+    def test_nlp_returns_call_analysis(self):
+        """NLP features now include nested call_analysis matching 10-category schema."""
         nlp = extract_nlp_features_local(SAMPLE_TRANSCRIPT)
-        assert isinstance(nlp["advanced_analysis"]["key_topics"], list)
+        aa  = nlp["advanced_analysis"]
+        assert "call_analysis" in aa
+        assert "primary_topics" in aa["call_analysis"]
 
-    def test_nlp_returns_urgency(self):
+    def test_nlp_returns_complaint_analysis(self):
         nlp = extract_nlp_features_local(SAMPLE_TRANSCRIPT)
-        assert nlp["advanced_analysis"]["urgency"] in ("low", "medium", "high")
+        aa  = nlp["advanced_analysis"]
+        assert "complaint_analysis" in aa
+
+    def test_nlp_returns_performance_metrics(self):
+        nlp = extract_nlp_features_local(SAMPLE_TRANSCRIPT)
+        aa  = nlp["advanced_analysis"]
+        assert "performance_metrics_sentiment" in aa
+
+
+class TestGongDataIngestionJob:
+    """Tests for the GongDataIngestionJob inner-join pattern."""
+
+    def test_inner_join_enriches_matching_transcript(self):
+        result = gong_data_ingestion_job([SAMPLE_TRANSCRIPT], SAMPLE_METADATA)
+        assert len(result) == 1
+        assert result[0]["account_name"] == "Acme Corp"
+
+    def test_inner_join_drops_unmatched_transcripts(self):
+        """Transcripts without matching metadata are dropped (inner join)."""
+        unmatched = {**SAMPLE_TRANSCRIPT, "conversation_id": "conv_99999"}
+        result    = gong_data_ingestion_job([unmatched], SAMPLE_METADATA)
+        assert len(result) == 0
+
+    def test_enrichment_adds_marketplace_id(self):
+        result = gong_data_ingestion_job([SAMPLE_TRANSCRIPT], SAMPLE_METADATA)
+        assert result[0]["marketplace_id"] == "US"
+
+    def test_enrichment_adds_advertiser_tier(self):
+        result = gong_data_ingestion_job([SAMPLE_TRANSCRIPT], SAMPLE_METADATA)
+        assert result[0]["advertiser_tier"] == "premium"
+
+    def test_html_entity_decoding(self):
+        """HTML entities in transcript text are decoded (Java HTMLEntityDecoder pattern)."""
+        html_transcript = {**SAMPLE_TRANSCRIPT, "transcript": "ROAS &gt; 3.0 &amp; CPC &lt; 2.0"}
+        result = gong_data_ingestion_job([html_transcript], SAMPLE_METADATA)
+        assert "&gt;" not in result[0]["transcript"]
+        assert ">" in result[0]["transcript"]
+
+    def test_ingestion_enriched_flag_set(self):
+        result = gong_data_ingestion_job([SAMPLE_TRANSCRIPT], SAMPLE_METADATA)
+        assert result[0]["ingestion_enriched"] is True
+
+    def test_empty_metadata_drops_all_transcripts(self):
+        result = gong_data_ingestion_job([SAMPLE_TRANSCRIPT], [])
+        assert len(result) == 0
+
+    def test_multiple_transcripts_join_correctly(self):
+        more_transcripts = [
+            {**SAMPLE_TRANSCRIPT, "conversation_id": f"conv_{i:05d}"}
+            for i in range(5)
+        ]
+        more_meta = [
+            {**SAMPLE_METADATA[0], "conversation_id": f"conv_{i:05d}"}
+            for i in range(3)  # only 3 match → inner join drops 2
+        ]
+        result = gong_data_ingestion_job(more_transcripts, more_meta)
+        assert len(result) == 3
 
 
 class TestProcessConversation:
     def test_returns_all_keys(self):
         result = process_conversation(SAMPLE_TRANSCRIPT)
         assert result is not None
-        assert "metadata" in result
-        assert "nlp_features" in result
+        assert "metadata"          in result
+        assert "nlp_features"      in result
         assert "business_features" in result
         assert "processing_version" in result
 
@@ -80,19 +154,16 @@ class TestProcessConversation:
         """Same input should always produce structurally identical output."""
         r1 = process_conversation(SAMPLE_TRANSCRIPT)
         r2 = process_conversation(SAMPLE_TRANSCRIPT)
-        assert r1["metadata"] == r2["metadata"]
+        assert r1["metadata"]          == r2["metadata"]
         assert r1["business_features"] == r2["business_features"]
-
-    def test_returns_none_on_empty_transcript(self):
-        """Mirrors .filter(Objects::nonNull) in Java — bad records are dropped."""
-        result = process_conversation({})
-        # Should either succeed with empty data or return None, not raise
-        # Empty transcript has no topics but should not crash
-        assert result is not None or result is None  # no exception
 
     def test_processing_version_set(self):
         result = process_conversation(SAMPLE_TRANSCRIPT)
         assert result["processing_version"] == "v1.2"
+
+    def test_does_not_raise_on_empty_transcript(self):
+        result = process_conversation({})
+        assert result is not None or result is None  # no exception
 
 
 class TestPipelineSimulated:
@@ -118,8 +189,8 @@ class TestPipelineSimulated:
         assert result["record_count"] == 100
 
     def test_optimized_has_lower_shuffle_than_baseline(self):
-        batch    = self._make_batch(500)
-        baseline = run_pipeline_simulated(batch, SPARK_CONF_BASELINE)
+        batch     = self._make_batch(500)
+        baseline  = run_pipeline_simulated(batch, SPARK_CONF_BASELINE)
         optimized = run_pipeline_simulated(batch, SPARK_CONF_OPTIMIZED)
         assert optimized["shuffle_read_mb"] < baseline["shuffle_read_mb"]
 

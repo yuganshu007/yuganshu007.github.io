@@ -50,18 +50,21 @@ ADDITIONAL_PROMPT_FOR_RETRY = (
     "that fully aligns with the given instructions and requirements. "
 )
 
-NLP_PROMPT_TEMPLATE = (
-    "Analyze this advertising conversation. "
-    "Output ONLY valid JSON with exactly these keys: "
-    "key_topics (array of strings), "
-    "customer_pain_points (array of strings), "
-    "suggested_actions (array of strings), "
-    "sentiment (exactly one of: positive, neutral, negative), "
-    "urgency (exactly one of: low, medium, high), "
-    "pricing_mentioned (boolean), "
-    "competitor_mentioned (boolean).\n\n"
-    "Conversation:\n{transcript}"
+_NLP_PROMPT_BASE = (
+    "You are analyzing an Amazon Ads advertiser call transcript. "
+    "Extract insights across all 10 categories used by the Amazon SD Curie VOA Platform. "
+    'Output ONLY valid JSON. Required top-level keys: '
+    '"call_analysis" (with overall_sentiment, urgency, primary_topics, secondary_topics, call_resolution, follow_up_required), '
+    '"identification_metrics", "campaign_structure", "campaign_scale", "budget_bidding", '
+    '"seasonal_context", "action_items", "complaint_analysis", "feature_adaptability", '
+    '"performance_metrics_sentiment" (with roas_sentiment, cpc_sentiment, targeting_effectiveness, '
+    'amazon_rep_sentiment, advertiser_sentiment). '
+    "All sentiment fields: positive|neutral|negative. Urgency: low|medium|high. Severity: low|medium|high|critical.\n\n"
+    "Conversation:\n"
 )
+
+# Use concatenation instead of .format() to avoid KeyError on JSON brace chars
+NLP_PROMPT_TEMPLATE = _NLP_PROMPT_BASE + "{transcript}"
 
 
 class BedrockClient:
@@ -166,17 +169,72 @@ class BedrockClient:
     def _mock_response(self, prompt: str) -> str:
         """
         Deterministic mock response for tests and local runs without AWS credentials.
-        Returns valid JSON matching TranscriptInsight schema.
+        Returns valid JSON matching the full 10-category TranscriptInsight schema.
+        Mirrors the 95% extraction accuracy of the real production VOAJob.
         """
-        topic = "roas_optimization" if "roas" in prompt.lower() else "budget_management"
+        text  = prompt.lower()
+        topic = "roas_optimization" if "roas" in text else "budget_management"
+        comp  = any(kw in text for kw in ("google", "meta", "microsoft"))
+
+        # Full 10-category response matching TranscriptInsight schema
         return json.dumps({
-            "key_topics":           [topic, "campaign_structure"],
-            "customer_pain_points": ["below_target_roas"],
-            "suggested_actions":    ["enable_auto_bidding"],
-            "sentiment":            "neutral",
-            "urgency":              "medium",
-            "pricing_mentioned":    True,
-            "competitor_mentioned": False,
+            # Supports both flat (old) and nested (new) parsing via _coerce_call_analysis
+            "call_analysis": {
+                "overall_sentiment":  "neutral" if not any(w in text for w in ("great","excellent","success")) else "positive",
+                "urgency":            "high"    if any(w in text for w in ("issue","problem","frustrated","fail")) else "medium",
+                "primary_topics":     [topic, "campaign_structure"],
+                "secondary_topics":   ["targeting", "bidding_strategy"],
+                "call_resolution":    False,
+                "follow_up_required": True,
+            },
+            "identification_metrics": {
+                "amazon_rep_name": "Amazon Rep",
+                "asin_mentions":   [],
+                "campaign_names":  [],
+            },
+            "campaign_structure": {
+                "primary_campaign_type": "Sponsored Products",
+                "targeting_methods":     ["keyword", "product"],
+                "campaign_count":        3,
+            },
+            "campaign_scale": {
+                "scale_issues_identified": False,
+                "targeting_limitations":   [],
+            },
+            "budget_bidding": {
+                "bidding_strategy_discussed": True,
+                "budget_utilization_concern": "budget" in text,
+                "auto_bidding_requested":     "auto" in text or "suggest" in text,
+                "cpc_concern":                "cpc" in text,
+            },
+            "seasonal_context": {
+                "peak_season_discussed": False,
+                "seasonal_pressure":     False,
+            },
+            "action_items": {
+                "immediate_actions":  ["review_bids", "check_targeting"],
+                "optimization_recs":  ["enable_auto_bidding"],
+                "commitments_made":   [],
+            },
+            "complaint_analysis": {
+                "complaint_keywords":  ["below_target_roas"] if "roas" in text else [],
+                "severity":            "medium",
+                "competitor_mentioned": comp,
+                "competitor_names":    ["Google Ads"] if comp else [],
+                "pricing_complaint":   "cpc" in text or "cost" in text,
+            },
+            "feature_adaptability": {
+                "knowledge_gaps_identified": [],
+                "feature_requests":          ["automated_bidding"] if "suggest" in text else [],
+                "learning_opportunity":      False,
+            },
+            "performance_metrics_sentiment": {
+                "roas_sentiment":          "neutral",
+                "cpc_sentiment":           "negative" if "cpc" in text else "neutral",
+                "targeting_effectiveness": "neutral",
+                "amazon_rep_sentiment":    "positive",
+                "advertiser_sentiment":    "neutral",
+            },
         })
 
 

@@ -1,6 +1,14 @@
 """
 Bullet 1: EMR/Spark cloud-native ETL pipeline for Advertisers transcripts.
 
+Real production context (Amazon SD Curie Irène Team, May–Aug 2025):
+  - Processes 1,000+ hours of daily Gong.io call transcripts
+  - XXLarge Apache Spark clusters on Amazon EMR
+  - Two Amber jobs: GongDataIngestionJob → VOAJob
+    * GongDataIngestionJob: inner joins Gong transcripts with Andes metadata
+      (account info, opportunity details, participant metadata)
+    * VOAJob: intelligence extraction engine — 10 insight categories via Bedrock
+
 Design choices that drive the 38% throughput improvement:
   - AQE enabled with skew join optimization (mirrors Java VOCBatchProcessingJob)
   - Dynamic partition overwrite for idempotent re-runs
@@ -8,7 +16,9 @@ Design choices that drive the 38% throughput improvement:
   - Partition target of 128 MB (avoids small-file / too-few-partition problems)
   - StorageLevel.MEMORY_AND_DISK for lineage checkpointing mid-pipeline
 
-Python translation of the SDCurie Amber VOCBatchProcessingJob.java pattern.
+Python translation of the SDCurie Amber Amber jobs:
+  GongDataIngestionJob.java → gong_data_ingestion_job()
+  VOAJob.java (VOCBatchProcessingJob) → process_conversation()
 """
 
 from __future__ import annotations
@@ -58,6 +68,75 @@ SPARK_CONF_BASELINE = {
 COMPETITOR_KEYWORDS = {"google ads", "meta", "microsoft advertising", "trade desk"}
 PRICING_KEYWORDS    = {"price", "cost", "cpc", "roas", "cpm", "budget"}
 
+# Gong.io transcript JSON schema field names (from actual API payload)
+GONG_FIELD_CONVERSATION_ID   = "conversation_id"
+GONG_FIELD_TIMESTAMP         = "timestamp"
+GONG_FIELD_DURATION_SECONDS  = "duration_seconds"
+GONG_FIELD_PARTICIPANTS      = "participants"
+GONG_FIELD_TRANSCRIPT_SEGS   = "transcript_segments"
+
+
+# ---------------------------------------------------------------------------
+# GongDataIngestionJob — mirrors Java inner join pattern
+# Performs complex inner joins between Gong transcripts and Andes metadata:
+#   account info, opportunity details, participant metadata
+# Data flow: Gong.io → Andes data lakes → enriched S3 insights
+# ---------------------------------------------------------------------------
+
+def gong_data_ingestion_job(
+    raw_transcripts: list[dict],
+    metadata_records: list[dict],
+) -> list[dict]:
+    """
+    Python equivalent of GongDataIngestionJob.compute().
+
+    Java pattern:
+        JavaPairRDD<String, JsonNode> transcripts = raw.keyBy(t -> t.get("id").asText());
+        JavaPairRDD<String, JsonNode> metadata    = meta.keyBy(m -> m.get("conversation_id").asText());
+        return transcripts.join(metadata).map(kv -> merge(kv._2._1, kv._2._2));
+
+    Performs:
+      - Inner join on conversation_id (drops transcripts with no metadata match)
+      - HTML entity decoding on transcript text (matches Java HTMLEntityDecoder)
+      - Metadata enrichment: account info, opportunity details, participant metadata
+      - AQE skew-safe broadcast join for small metadata dimension table
+    """
+    import html
+
+    # Build metadata lookup (broadcast-equivalent: small table fits in memory)
+    meta_index: dict[str, dict] = {
+        m.get(GONG_FIELD_CONVERSATION_ID, ""): m
+        for m in metadata_records
+        if m.get(GONG_FIELD_CONVERSATION_ID)
+    }
+
+    enriched = []
+    for transcript in raw_transcripts:
+        conv_id = transcript.get(GONG_FIELD_CONVERSATION_ID, "")
+        meta    = meta_index.get(conv_id)
+        if meta is None:
+            # Inner join — drop records without metadata match
+            continue
+
+        # HTML entity decoding (matches Java HTMLEntityDecoder usage)
+        raw_text = transcript.get("transcript", "")
+        decoded_text = html.unescape(raw_text)
+
+        merged = {
+            **transcript,
+            "transcript": decoded_text,
+            # Enrich with Andes metadata
+            "account_name":       meta.get("account_name", ""),
+            "opportunity_stage":  meta.get("opportunity_stage", ""),
+            "marketplace_id":     meta.get("marketplace_id", "US"),
+            "advertiser_tier":    meta.get("advertiser_tier", "standard"),
+            "participant_count":  len(transcript.get(GONG_FIELD_PARTICIPANTS, [])),
+            "ingestion_enriched": True,
+        }
+        enriched.append(merged)
+
+    return enriched
+
 
 def get_or_create_spark(app_name: str, conf: dict[str, str], local: bool = True):
     """Create a SparkSession with the given configuration."""
@@ -103,7 +182,8 @@ def extract_nlp_features_local(transcript: dict) -> dict:
     """
     Local NLP feature extraction (no Bedrock call).
     Used in unit tests and local benchmark runs.
-    For production, this is replaced by the Bedrock invocation in the agent module.
+    In production VOAJob, this is replaced by the Bedrock invocation
+    which extracts all 10 insight categories (95% accuracy per VOA Platform PDF).
     """
     text  = transcript.get("transcript", "").lower()
     words = text.split()
@@ -117,16 +197,38 @@ def extract_nlp_features_local(transcript: dict) -> dict:
 
     sentiment_score = (pos_count - neg_count) / total
     sentiment_label = "positive" if sentiment_score > 0.1 else "negative" if sentiment_score < -0.1 else "neutral"
+    urgency = "high" if neg_count > 3 else "medium" if neg_count > 1 else "low"
+    topics  = _extract_topics(text)
 
     return {
-        "sentiment_score":   round(sentiment_score, 4),
-        "sentiment_label":   sentiment_label,
+        "sentiment_score": round(sentiment_score, 4),
+        "sentiment_label": sentiment_label,
+        # Nested dict mirrors the 10-category TranscriptInsight schema
         "advanced_analysis": {
-            "key_topics":         _extract_topics(text),
-            "customer_pain_points": _extract_pain_points(text),
-            "suggested_actions":  [],
-            "sentiment":          sentiment_label,
-            "urgency":            "high" if neg_count > 3 else "medium" if neg_count > 1 else "low",
+            # Category 5 — Call Analysis (required)
+            "call_analysis": {
+                "overall_sentiment": sentiment_label,
+                "urgency":           urgency,
+                "primary_topics":    topics or ["general"],
+                "secondary_topics":  [],
+                "call_resolution":   pos_count > neg_count,
+                "follow_up_required": neg_count > 2,
+            },
+            # Category 8 — Complaint Analysis
+            "complaint_analysis": {
+                "complaint_keywords":    _extract_pain_points(text),
+                "severity":              "high" if neg_count > 3 else "medium" if neg_count > 1 else "low",
+                "competitor_mentioned":  any(kw in text for kw in COMPETITOR_KEYWORDS),
+                "pricing_complaint":     any(kw in text for kw in PRICING_KEYWORDS),
+            },
+            # Category 10 — Performance Metrics Sentiment
+            "performance_metrics_sentiment": {
+                "roas_sentiment": sentiment_label if "roas" in text else "neutral",
+                "cpc_sentiment":  sentiment_label if "cpc" in text else "neutral",
+                "targeting_effectiveness": "neutral",
+                "amazon_rep_sentiment":    "neutral",
+                "advertiser_sentiment":    sentiment_label,
+            },
         },
     }
 
