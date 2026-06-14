@@ -1,0 +1,16 @@
+{
+  "n_queries": 5,
+  "repeat": 3,
+  "detail_rows": 6000000,
+  "gold_rows": 700,
+  "detail_full_scan_seconds": 0.0616,
+  "gold_table_seconds": 0.005,
+  "time_to_insight_speedup_x": 12.4,
+  "degradation": {
+    "automated_detection_lag_days": 1,
+    "manual_detection_lag_days_expected": 5.5,
+    "detection_latency_reduction_pct": 81.8,
+    "note": "Automated regression detection vs an expected manual detection lag for a gradual drift. The detection-latency reduction is computed; the org-level 'incident response' improvement is illustrative (see docs/METRICS.md)."
+  },
+  "note": "Speedup = time for the same analyst questions over the full curated detail table vs the pre-aggregated gold table. Measured on this machine; the factor comes from aggregating millions of detail rows vs reading a small pre-aggregated table."
+}
