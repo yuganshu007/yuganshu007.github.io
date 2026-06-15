@@ -25,7 +25,7 @@ export WORKER_THREADS ?= 12
 export MAX_ATTEMPTS ?= 5
 export BACKOFF_MS   ?= 40
 
-.PHONY: setup build venv worker ingest demo bench bench-read bench-pipeline redis clean
+.PHONY: setup build venv worker ingest demo bench bench-read bench-pipeline bench-routing redis clean
 
 setup: venv build ## one-time setup of python + java artifacts
 
@@ -50,10 +50,13 @@ ingest: ## run the Python ingest API (foreground); override INGEST_MODE=baseline
 demo: ## end-to-end smoke walk-through
 	./scripts/demo.sh
 
-bench: bench-pipeline bench-read ## reproduce every resume metric
+bench: bench-pipeline bench-routing bench-read ## reproduce every resume metric
 
-bench-pipeline: ## Metrics 1 & 2 (response time + SLA breaches)
+bench-pipeline: ## Metric 1a & 2 (API response time + SLA breaches)
 	$(PY) benchmark/pipeline_bench.py
+
+bench-routing: ## Metric 1b (tuned request routing: urgent end-to-end time)
+	$(PY) benchmark/routing_bench.py
 
 bench-read: ## Metric 3 (SQLite read latency)
 	$(PY) benchmark/read_latency.py

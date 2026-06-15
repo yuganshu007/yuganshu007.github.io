@@ -30,6 +30,11 @@ class Settings:
     dlq_key: str
     group: str
 
+    # Request routing: "tuned" routes urgent events to a high-priority lane so they
+    # are not stuck behind a backlog of normal traffic; "fifo" sends everything to a
+    # single lane (the un-tuned routing used as the A/B baseline).
+    routing_mode: str
+
     # Shared SQLite system-of-record / local cache.
     db_path: str
 
@@ -59,6 +64,7 @@ class Settings:
             stream_key=os.getenv("STREAM_KEY", "logistics.events"),
             dlq_key=os.getenv("DLQ_KEY", "logistics.events.dlq"),
             group=os.getenv("CONSUMER_GROUP", "tracking-workers"),
+            routing_mode=os.getenv("ROUTING_MODE", "tuned").strip().lower(),
             db_path=os.getenv("DB_PATH", default_db),
             downstream_ms=int(os.getenv("DOWNSTREAM_MS", "22")),
             transient_fail_rate=float(os.getenv("TRANSIENT_FAIL_RATE", "0.0")),

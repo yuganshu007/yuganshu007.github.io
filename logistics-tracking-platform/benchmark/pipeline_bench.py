@@ -68,6 +68,7 @@ def base_env(downstream_ms: int, fail_rate: float, sla_ms: int) -> dict:
         DOWNSTREAM_MS=str(downstream_ms),
         TRANSIENT_FAIL_RATE=str(fail_rate),
         SLA_MS=str(sla_ms),
+        ROUTING_MODE=os.getenv("ROUTING_MODE", "tuned"),
     )
     return env
 

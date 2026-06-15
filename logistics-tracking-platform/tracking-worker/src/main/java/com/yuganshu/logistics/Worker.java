@@ -39,12 +39,14 @@ public final class Worker {
         EventStore.ensureSchema(cfg.dbPath);
 
         try (Jedis admin = new Jedis(cfg.redisHost, cfg.redisPort)) {
-            try {
-                admin.xgroupCreate(cfg.streamKey, cfg.group, new StreamEntryID(), true);
-            } catch (Exception e) {
-                // BUSYGROUP -> the group already exists, which is fine.
-                if (!String.valueOf(e.getMessage()).contains("BUSYGROUP")) {
-                    throw e;
+            for (String lane : cfg.lanes()) {
+                try {
+                    admin.xgroupCreate(lane, cfg.group, new StreamEntryID(), true);
+                } catch (Exception e) {
+                    // BUSYGROUP -> the group already exists, which is fine.
+                    if (!String.valueOf(e.getMessage()).contains("BUSYGROUP")) {
+                        throw e;
+                    }
                 }
             }
         }
@@ -52,8 +54,8 @@ public final class Worker {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> RUNNING.set(false)));
 
         System.out.printf(
-            "[worker] starting threads=%d stream=%s group=%s downstreamMs=%d failRate=%.2f maxAttempts=%d backoffMs=%d%n",
-            cfg.workerThreads, cfg.streamKey, cfg.group, cfg.downstreamMs,
+            "[worker] starting threads=%d routing=%s lanes=%s group=%s downstreamMs=%d failRate=%.2f maxAttempts=%d backoffMs=%d%n",
+            cfg.workerThreads, cfg.routingMode, cfg.lanes(), cfg.group, cfg.downstreamMs,
             cfg.transientFailRate, cfg.maxAttempts, cfg.backoffMs);
 
         Thread[] threads = new Thread[cfg.workerThreads];
@@ -87,30 +89,54 @@ public final class Worker {
     }
 
     private static void runConsumer(Config cfg, String consumer) {
-        Map<String, StreamEntryID> streams = new HashMap<>();
-        streams.put(cfg.streamKey, StreamEntryID.XREADGROUP_UNDELIVERED_ENTRY);
-        XReadGroupParams params = XReadGroupParams.xReadGroupParams()
-            .count(cfg.batchCount)
-            .block(cfg.blockMs);
+        List<String> lanes = cfg.lanes();
+        String highLane = lanes.get(0);
+        String normalLane = lanes.get(lanes.size() - 1);
+        boolean tuned = lanes.size() > 1;
+
+        // Non-blocking read for the high lane so we can fall through to the normal
+        // lane; blocking read for the (last) normal lane to avoid a busy spin.
+        XReadGroupParams highParams = XReadGroupParams.xReadGroupParams().count(cfg.batchCount);
+        XReadGroupParams normalParams = XReadGroupParams.xReadGroupParams()
+            .count(cfg.batchCount).block(cfg.blockMs);
+        Map<String, StreamEntryID> highStreams = Map.of(
+            highLane, StreamEntryID.XREADGROUP_UNDELIVERED_ENTRY);
+        Map<String, StreamEntryID> normalStreams = Map.of(
+            normalLane, StreamEntryID.XREADGROUP_UNDELIVERED_ENTRY);
 
         try (Jedis jedis = new Jedis(cfg.redisHost, cfg.redisPort);
              EventStore store = new EventStore(cfg.dbPath)) {
             while (RUNNING.get()) {
-                List<Map.Entry<String, List<StreamEntry>>> resp =
-                    jedis.xreadGroup(cfg.group, consumer, params, streams);
-                if (resp == null || resp.isEmpty()) {
-                    continue;
+                // Always drain the high-priority lane first (tuned routing).
+                int handledHigh = tuned
+                    ? drain(cfg, jedis, store, highLane, jedis.xreadGroup(
+                        cfg.group, consumer, highParams, highStreams))
+                    : 0;
+                if (handledHigh > 0) {
+                    continue;  // keep prioritizing the high lane while it has work
                 }
-                for (Map.Entry<String, List<StreamEntry>> stream : resp) {
-                    for (StreamEntry entry : stream.getValue()) {
-                        handle(cfg, jedis, store, entry);
-                        jedis.xack(cfg.streamKey, cfg.group, entry.getID());
-                    }
-                }
+                drain(cfg, jedis, store, normalLane, jedis.xreadGroup(
+                    cfg.group, consumer, normalParams, normalStreams));
             }
         } catch (Exception e) {
             System.err.printf("[worker:%s] fatal: %s%n", consumer, e);
         }
+    }
+
+    private static int drain(Config cfg, Jedis jedis, EventStore store, String lane,
+                             List<Map.Entry<String, List<StreamEntry>>> resp) {
+        if (resp == null || resp.isEmpty()) {
+            return 0;
+        }
+        int handled = 0;
+        for (Map.Entry<String, List<StreamEntry>> stream : resp) {
+            for (StreamEntry entry : stream.getValue()) {
+                handle(cfg, jedis, store, entry);
+                jedis.xack(lane, cfg.group, entry.getID());
+                handled++;
+            }
+        }
+        return handled;
     }
 
     private static void handle(Config cfg, Jedis jedis, EventStore store, StreamEntry entry) {

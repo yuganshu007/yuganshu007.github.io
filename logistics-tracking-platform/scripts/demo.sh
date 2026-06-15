@@ -29,8 +29,10 @@ UVICORN="$ROOT/.venv/bin/uvicorn"
 JAR="$ROOT/tracking-worker/target/tracking-worker.jar"
 BASE="http://127.0.0.1:8080"
 
+export ROUTING_MODE="${ROUTING_MODE:-tuned}"
+
 mkdir -p "$ROOT/data"
-redis-cli del "$STREAM_KEY" "$DLQ_KEY" >/dev/null 2>&1 || true
+redis-cli del "$STREAM_KEY" "$STREAM_KEY.high" "$STREAM_KEY.normal" "$DLQ_KEY" >/dev/null 2>&1 || true
 
 cleanup() {
   [[ -n "${WORKER_PID:-}" ]] && kill "$WORKER_PID" 2>/dev/null || true

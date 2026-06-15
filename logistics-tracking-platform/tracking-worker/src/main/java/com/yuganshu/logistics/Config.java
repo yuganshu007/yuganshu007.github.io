@@ -11,6 +11,8 @@ public final class Config {
     public final String streamKey;
     public final String dlqKey;
     public final String group;
+    // "tuned" -> consume <stream>.high before <stream>.normal; "fifo" -> single lane.
+    public final String routingMode;
     public final String consumerPrefix;
     public final String dbPath;
 
@@ -29,6 +31,7 @@ public final class Config {
         this.streamKey = env("STREAM_KEY", "logistics.events");
         this.dlqKey = env("DLQ_KEY", "logistics.events.dlq");
         this.group = env("CONSUMER_GROUP", "tracking-workers");
+        this.routingMode = env("ROUTING_MODE", "tuned");
         this.consumerPrefix = env("CONSUMER_PREFIX", "worker");
         this.dbPath = env("DB_PATH", "../data/logistics.db");
 
@@ -44,6 +47,14 @@ public final class Config {
 
     public static Config load() {
         return new Config();
+    }
+
+    /** Lanes this worker consumes, ordered high-priority first. */
+    public java.util.List<String> lanes() {
+        if ("tuned".equals(routingMode)) {
+            return java.util.List.of(streamKey + ".high", streamKey + ".normal");
+        }
+        return java.util.List.of(streamKey + ".normal");
     }
 
     private static String env(String key, String def) {

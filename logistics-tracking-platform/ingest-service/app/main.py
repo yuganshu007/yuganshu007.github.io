@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 from .cache import LruTtlCache
 from . import db
 from .config import Settings
+from .router import PriorityRouter
 
 SETTINGS = Settings.load()
 
@@ -77,6 +78,7 @@ class Metrics:
 
 metrics = Metrics()
 cache = LruTtlCache(SETTINGS.cache_capacity, SETTINGS.cache_ttl_ms)
+router = PriorityRouter(SETTINGS.stream_key, SETTINGS.routing_mode)
 _redis: aioredis.Redis | None = None
 
 
@@ -104,23 +106,29 @@ async def healthz() -> dict[str, str]:
 @app.get("/metrics")
 async def get_metrics() -> dict[str, object]:
     stream_len = 0
-    backlog = 0  # entries not yet delivered + delivered-but-unacked (pending)
+    backlog = 0  # entries not yet delivered + delivered-but-unacked (pending), all lanes
+    per_lane: dict[str, int] = {}
     if SETTINGS.is_optimized and _redis is not None:
-        try:
-            stream_len = await _redis.xlen(SETTINGS.stream_key)
-            groups = await _redis.xinfo_groups(SETTINGS.stream_key)
-            for g in groups:
-                if g.get("name") == SETTINGS.group:
-                    backlog = int(g.get("lag") or 0) + int(g.get("pending") or 0)
-                    break
-        except Exception:  # pragma: no cover - stream/group may not exist yet
-            backlog = 0
+        for lane in router.lanes():
+            try:
+                stream_len += await _redis.xlen(lane)
+                lane_backlog = 0
+                for g in await _redis.xinfo_groups(lane):
+                    if g.get("name") == SETTINGS.group:
+                        lane_backlog = int(g.get("lag") or 0) + int(g.get("pending") or 0)
+                        break
+                per_lane[lane] = lane_backlog
+                backlog += lane_backlog
+            except Exception:  # pragma: no cover - stream/group may not exist yet
+                per_lane[lane] = 0
     return {
         "mode": SETTINGS.mode,
+        "routing_mode": SETTINGS.routing_mode,
         "ingest": metrics.snapshot(),
         "cache": cache.stats(),
         "stream_len": stream_len,
         "queue_backlog": backlog,
+        "queue_backlog_by_lane": per_lane,
     }
 
 
@@ -162,12 +170,15 @@ async def _process_inline(event: dict) -> JSONResponse:
 
 
 async def _enqueue(event: dict) -> JSONResponse:
-    """Optimized architecture: validate + publish, let the worker pool do the work."""
+    """Optimized architecture: validate + route + publish, let the worker pool do the work."""
     assert _redis is not None
-    await _redis.xadd(SETTINGS.stream_key, {"data": json.dumps(event)})
+    # Tuned request routing: pick the lane (and stamp event["priority"]) in O(1).
+    lane = router.route(event)
+    await _redis.xadd(lane, {"data": json.dumps(event)})
     with metrics.lock:
         metrics.events_enqueued += 1
-    return JSONResponse(status_code=202, content={"event_id": event["event_id"], "status": "QUEUED"})
+    return JSONResponse(status_code=202, content={
+        "event_id": event["event_id"], "status": "QUEUED", "priority": event["priority"]})
 
 
 @app.post("/shipments/{shipment_id}/events")
@@ -225,6 +236,8 @@ async def admin_reset() -> dict[str, str]:
         metrics.events_processed_inline = 0
         metrics.inline_failures = 0
     if SETTINGS.is_optimized and _redis is not None:
+        for lane in PriorityRouter.all_possible_lanes(SETTINGS.stream_key):
+            await _redis.delete(lane)
         await _redis.delete(SETTINGS.stream_key)
         await _redis.delete(SETTINGS.dlq_key)
     return {"status": "reset"}

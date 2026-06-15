@@ -14,57 +14,57 @@
     "latency": {
       "mode": "baseline",
       "count": 4000,
-      "mean_ms": 22.433,
-      "median_ms": 22.384,
-      "p95_ms": 23.064,
-      "p99_ms": 23.992
+      "mean_ms": 22.459,
+      "median_ms": 22.41,
+      "p95_ms": 23.125,
+      "p99_ms": 24.144
     },
     "sla": {
       "total_sent": 4000,
-      "persisted_ok": 3195,
-      "on_time": 3195,
+      "persisted_ok": 3175,
+      "on_time": 3175,
       "failed_or_invalid": 0,
-      "breaches": 805,
-      "breach_rate_pct": 20.12
+      "breaches": 825,
+      "breach_rate_pct": 20.62
     },
     "statuses": {
-      "503": 805,
-      "201": 3195
+      "201": 3175,
+      "503": 825
     }
   },
   "optimized": {
     "latency": {
       "mode": "optimized",
       "count": 4000,
-      "mean_ms": 1.794,
-      "median_ms": 1.798,
-      "p95_ms": 2.116,
-      "p99_ms": 2.232
+      "mean_ms": 1.819,
+      "median_ms": 1.826,
+      "p95_ms": 2.149,
+      "p99_ms": 2.294
     },
     "sla": {
       "total_sent": 4000,
-      "persisted_ok": 4000,
-      "on_time": 4000,
-      "failed_or_invalid": 0,
-      "breaches": 0,
-      "breach_rate_pct": 0.0
+      "persisted_ok": 3996,
+      "on_time": 3996,
+      "failed_or_invalid": 4,
+      "breaches": 4,
+      "breach_rate_pct": 0.1
     },
     "statuses": {
       "202": 4000
     }
   },
   "metric_1_response_time": {
-    "baseline_mean_ms": 22.433,
-    "optimized_mean_ms": 1.794,
-    "improvement_mean_pct": 92.0,
-    "baseline_p95_ms": 23.064,
-    "optimized_p95_ms": 2.116,
-    "improvement_p95_pct": 90.8
+    "baseline_mean_ms": 22.459,
+    "optimized_mean_ms": 1.819,
+    "improvement_mean_pct": 91.9,
+    "baseline_p95_ms": 23.125,
+    "optimized_p95_ms": 2.149,
+    "improvement_p95_pct": 90.7
   },
   "metric_2_sla_breaches": {
-    "baseline_breach_rate_pct": 20.12,
-    "optimized_breach_rate_pct": 0.0,
-    "absolute_reduction_pct_points": 20.12,
-    "relative_reduction_pct": 100.0
+    "baseline_breach_rate_pct": 20.62,
+    "optimized_breach_rate_pct": 0.1,
+    "absolute_reduction_pct_points": 20.52,
+    "relative_reduction_pct": 99.5
   }
 }
