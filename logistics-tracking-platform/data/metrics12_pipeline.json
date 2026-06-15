@@ -1,0 +1,70 @@
+{
+  "config": {
+    "rps": 200,
+    "duration_s": 20,
+    "shipments": 200,
+    "downstream_ms": 20,
+    "transient_fail_rate": 0.2,
+    "sla_ms": 750,
+    "worker_threads": 12,
+    "max_attempts": 5,
+    "backoff_ms": 40
+  },
+  "baseline": {
+    "latency": {
+      "mode": "baseline",
+      "count": 4000,
+      "mean_ms": 22.459,
+      "median_ms": 22.41,
+      "p95_ms": 23.125,
+      "p99_ms": 24.144
+    },
+    "sla": {
+      "total_sent": 4000,
+      "persisted_ok": 3175,
+      "on_time": 3175,
+      "failed_or_invalid": 0,
+      "breaches": 825,
+      "breach_rate_pct": 20.62
+    },
+    "statuses": {
+      "201": 3175,
+      "503": 825
+    }
+  },
+  "optimized": {
+    "latency": {
+      "mode": "optimized",
+      "count": 4000,
+      "mean_ms": 1.819,
+      "median_ms": 1.826,
+      "p95_ms": 2.149,
+      "p99_ms": 2.294
+    },
+    "sla": {
+      "total_sent": 4000,
+      "persisted_ok": 3996,
+      "on_time": 3996,
+      "failed_or_invalid": 4,
+      "breaches": 4,
+      "breach_rate_pct": 0.1
+    },
+    "statuses": {
+      "202": 4000
+    }
+  },
+  "metric_1_response_time": {
+    "baseline_mean_ms": 22.459,
+    "optimized_mean_ms": 1.819,
+    "improvement_mean_pct": 91.9,
+    "baseline_p95_ms": 23.125,
+    "optimized_p95_ms": 2.149,
+    "improvement_p95_pct": 90.7
+  },
+  "metric_2_sla_breaches": {
+    "baseline_breach_rate_pct": 20.62,
+    "optimized_breach_rate_pct": 0.1,
+    "absolute_reduction_pct_points": 20.52,
+    "relative_reduction_pct": 99.5
+  }
+}

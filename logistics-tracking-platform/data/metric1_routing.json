@@ -1,0 +1,35 @@
+{
+  "config": {
+    "events": 4000,
+    "high_frac": 0.1,
+    "worker_threads": 4,
+    "downstream_ms": 20,
+    "shipments": 200
+  },
+  "fifo": {
+    "urgent": {
+      "count": 400,
+      "mean_ms": 4663.0,
+      "p95_ms": 10262.0
+    },
+    "normal": {
+      "count": 3600,
+      "mean_ms": 4707.3,
+      "p95_ms": 10145.0
+    }
+  },
+  "tuned": {
+    "urgent": {
+      "count": 400,
+      "mean_ms": 193.5,
+      "p95_ms": 552.0
+    },
+    "normal": {
+      "count": 3600,
+      "mean_ms": 5464.3,
+      "p95_ms": 10609.0
+    }
+  },
+  "urgent_response_time_improvement_mean_pct": 95.9,
+  "urgent_response_time_improvement_p95_pct": 94.6
+}

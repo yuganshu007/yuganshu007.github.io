@@ -1,0 +1,38 @@
+{
+  "dataset": {
+    "shipments": 8000,
+    "events_per_shipment": 10,
+    "total_events": 80000,
+    "iterations": 20000
+  },
+  "results": [
+    {
+      "config": "baseline (no index, no cache)",
+      "mean_us": 3162.61,
+      "median_us": 3108.44,
+      "p95_us": 3207.26
+    },
+    {
+      "config": "indexed (no cache)",
+      "mean_us": 15.62,
+      "median_us": 14.93,
+      "p95_us": 18.93
+    },
+    {
+      "config": "optimized (index + cache)",
+      "mean_us": 3.52,
+      "median_us": 0.44,
+      "p95_us": 18.58
+    }
+  ],
+  "cache_stats": {
+    "hits": 16607,
+    "misses": 3393,
+    "size": 3393,
+    "hit_ratio_pct": 83.03
+  },
+  "reductions_pct": {
+    "indexing_only": 99.5,
+    "index_plus_cache": 99.9
+  }
+}
